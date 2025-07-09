@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:1028Akihiro@db.tdpnuvtkiliypyywkxsd.supabase.co:5432/postgres"
+}
+
+model User {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  passwordHash      String         @map("password_hash")
+  nickname          String?
+  emailVerified     Boolean        @default(false) @map("email_verified")
+  verificationToken String?        @map("verification_token")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  notes             Note[]
+  noteTemplates     NoteTemplate[]
+
+  @@map("cromin_users")
+}
+
+model NoteType {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  notes         Note[]
+  noteTemplates NoteTemplate[]
+
+  @@map("note_types")
+}
+
+model Result {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  notes         Note[]
+  noteTemplates NoteTemplate[]
+
+  @@map("results")
+}
+
+model Note {
+  id            String   @id @default(cuid())
+  title         String?
+  opponent      String?
+  content       String?
+  memo          String?
+  condition     String?
+  isPublic      Boolean  @default(false) @map("is_public")
+  userId        String   @map("user_id")
+  typeId        Int      @map("type_id")
+  resultId      Int?     @map("result_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  matchDuration Int?     @map("match_duration")
+  scoreData     String?  @map("score_data")
+  totalSets     Int?     @map("total_sets")
+  wonSets       Int?     @map("won_sets")
+  result        Result?  @relation(fields: [resultId], references: [id])
+  noteType      NoteType @relation(fields: [typeId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("cromin_notes")
+}
+
+model NoteTemplate {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  name          String
+  typeId        Int      @map("type_id")
+  title         String?
+  opponent      String?
+  content       String?
+  resultId      Int?     @map("result_id")
+  memo          String?
+  condition     String?
+  isPublic      Boolean  @default(false) @map("is_public")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  matchDuration Int?     @map("match_duration")
+  scoreData     String?  @map("score_data")
+  totalSets     Int?     @map("total_sets")
+  wonSets       Int?     @map("won_sets")
+  result        Result?  @relation(fields: [resultId], references: [id])
+  noteType      NoteType @relation(fields: [typeId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("note_templates")
+}
