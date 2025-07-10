@@ -2,9 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { NoteType, Result, Note } from "@/types/database";
-import PageTransition from "@/components/PageTransition";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import ScoreInput from "@/components/ScoreInput";
+import { PageTransition, LoadingSpinner, ScoreInput } from '@/components';
 
 interface ScoreSet {
   setNumber: number;

@@ -3,7 +3,7 @@ import { getOpponentsData } from "@/lib/analytics";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import OpponentsClient from "@/app/analytics/opponents/OpponentsClient";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { LoadingSpinner } from '@/components';
 
 export default async function OpponentsPage() {
   // サーバーサイドでデータを取得

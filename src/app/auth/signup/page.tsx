@@ -2,8 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import PageTransition from '@/components/PageTransition';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { PageTransition, LoadingSpinner } from '@/components';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');

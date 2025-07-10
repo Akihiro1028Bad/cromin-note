@@ -3,9 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
-import PageTransition from "@/components/PageTransition";
-import AnimatedButton from "@/components/AnimatedButton";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { PageTransition, AnimatedButton, LoadingSpinner } from '@/components';
 import { motion } from "framer-motion";
 
 // Prismaの生成された型を使用

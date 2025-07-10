@@ -1,9 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { NoteWithRelations } from "@/types/database";
-import PageTransition from "@/components/PageTransition";
-import AnimatedButton from "@/components/AnimatedButton";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { PageTransition, AnimatedButton, LoadingSpinner } from '@/components';
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 

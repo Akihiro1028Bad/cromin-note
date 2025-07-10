@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import PageTransition from "@/components/PageTransition";
+import { PageTransition } from '@/components';
 import { OpponentsData, OpponentData } from "@/lib/analytics";
 
 interface OpponentsClientProps {

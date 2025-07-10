@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { NoteWithRelations } from "@/types/database";
-import PageTransition from "@/components/PageTransition";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { PageTransition, LoadingSpinner } from '@/components';
 import { parseScoreData, formatScoreDisplay, getMatchResult } from "@/lib/scoreUtils";
 
 export default function NoteDetailPage() {
