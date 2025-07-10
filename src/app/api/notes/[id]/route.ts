@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
 // ノート取得
 export async function GET(
   request: NextRequest,
