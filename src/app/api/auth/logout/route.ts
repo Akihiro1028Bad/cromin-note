@@ -1,4 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic';
 
 export async function POST() {
   try {
