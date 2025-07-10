@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import PageTransition from "@/components/PageTransition";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { PageTransition, LoadingSpinner } from "../../components";
 
 
 interface AnalyticsData {

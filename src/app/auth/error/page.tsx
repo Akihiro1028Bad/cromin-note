@@ -1,8 +1,7 @@
 "use client";
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import PageTransition from '@/components/PageTransition';
-import AnimatedButton from '@/components/AnimatedButton';
+import { PageTransition, AnimatedButton } from '../../../components';
 import { motion } from 'framer-motion';
 import { useRouter } from "next/navigation";
 
