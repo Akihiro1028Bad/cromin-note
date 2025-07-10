@@ -1,5 +1,5 @@
 {
-  "buildCommand": "prisma generate --no-engine && next build",
+  "buildCommand": "npm install prisma@5.15.0 @prisma/client@5.15.0 && prisma generate && next build",
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["hnd1"]
