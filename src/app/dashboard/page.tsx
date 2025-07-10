@@ -1,8 +1,6 @@
 "use client";
 import { useAuth } from "@/hooks/useAuth";
-import PageTransition from "@/components/PageTransition";
-
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { PageTransition, LoadingSpinner } from "@/components";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 

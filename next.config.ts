@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   eslint: {
@@ -9,6 +10,14 @@ const nextConfig: NextConfig = {
   },
   // Prismaクライアントを外部パッケージとして設定
   serverExternalPackages: ['@prisma/client'],
+  // パスエイリアス設定
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, 'src'),
+    };
+    return config;
+  },
   // APIルートの静的生成を無効にする
   async headers() {
     return [

@@ -3,8 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import PageTransition from '@/components/PageTransition';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { PageTransition, LoadingSpinner } from '@/components';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
