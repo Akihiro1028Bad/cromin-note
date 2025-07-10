@@ -7,10 +7,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // ビルド時の静的生成を無効にする
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
+  // Prismaクライアントを外部パッケージとして設定
+  serverExternalPackages: ['@prisma/client'],
   // APIルートの静的生成を無効にする
   async headers() {
     return [
