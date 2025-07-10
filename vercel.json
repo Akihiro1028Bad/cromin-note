@@ -2,5 +2,10 @@
   "buildCommand": "npm install prisma@5.15.0 @prisma/client@5.15.0 && prisma generate && next build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["hnd1"]
+  "regions": ["hnd1"],
+  "functions": {
+    "src/app/**/*.tsx": {
+      "maxDuration": 30
+    }
+  }
 } 

@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import PageTransition from '@/components/PageTransition';
+import { PageTransition } from '@/components';
 import AnimatedButton from '@/components/AnimatedButton';
 import { motion } from 'framer-motion';
 import { useRouter } from "next/navigation";
