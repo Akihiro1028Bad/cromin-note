@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { NoteWithRelations } from "@/types/database";
+
 import PageTransition from "@/components/PageTransition";
 import AnimatedButton from "@/components/AnimatedButton";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -79,8 +79,8 @@ export default function MyPage() {
       const data = await response.json();
       console.log('My notes data:', data); // デバッグ用
       setNotes(data.notes || []);
-    } catch (error) {
-      console.error('Error fetching notes:', error);
+    } catch {
+      console.error('Error fetching notes');
     } finally {
       setLoading(false);
     }
@@ -129,16 +129,7 @@ export default function MyPage() {
     };
   };
 
-  // スコアデータをフォーマット
-  const formatScoreData = (scoreData: string | null) => {
-    if (!scoreData) return null;
-    try {
-      const scores = JSON.parse(scoreData);
-      return scores.map((set: any) => `${set.myScore}-${set.opponentScore}`).join(', ');
-    } catch (e) {
-      return null;
-    }
-  };
+
 
   const handleDelete = async (noteId: string) => {
     if (!confirm('このノートを削除しますか？')) return;
@@ -163,8 +154,8 @@ export default function MyPage() {
       }
 
       fetchMyNotes(); // 一覧を再取得
-    } catch (error) {
-      console.error('Error deleting note:', error);
+    } catch {
+      console.error('Error deleting note');
       alert('削除に失敗しました。');
     }
   };

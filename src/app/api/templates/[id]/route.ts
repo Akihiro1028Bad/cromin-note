@@ -3,14 +3,15 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 
 // テンプレート編集
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!token) return NextResponse.json({ success: false, message: '認証トークンが必要です' }, { status: 401 });
     const user = verifyToken(token);
     if (!user) return NextResponse.json({ success: false, message: '無効なトークンです' }, { status: 401 });
 
-    const templateId = params.id;
+    const templateId = id;
     const body = await request.json();
     const { name, typeId, title, opponent, content, resultId, memo, condition, isPublic } = body;
     if (!name || !typeId) {
@@ -45,14 +46,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // テンプレート削除
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!token) return NextResponse.json({ success: false, message: '認証トークンが必要です' }, { status: 401 });
     const user = verifyToken(token);
     if (!user) return NextResponse.json({ success: false, message: '無効なトークンです' }, { status: 401 });
 
-    const templateId = params.id;
+    const templateId = id;
     // 所有者チェック
     const template = await prisma.noteTemplate.findUnique({ where: { id: templateId } });
     if (!template || template.userId !== user.userId) {

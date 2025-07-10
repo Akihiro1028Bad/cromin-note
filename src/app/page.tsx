@@ -1,9 +1,6 @@
 "use client";
-import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import PageTransition from "@/components/PageTransition";
-import AnimatedButton from "@/components/AnimatedButton";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 

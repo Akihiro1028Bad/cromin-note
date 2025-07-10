@@ -5,14 +5,16 @@ import { prisma } from '@/lib/prisma';
 // ノート取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const note = await prisma.note.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         noteType: true,
         result: true,
+        scoreSets: true,
         user: {
           select: {
             id: true,
@@ -45,8 +47,9 @@ export async function GET(
 // ノート更新
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // 認証チェック
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -67,7 +70,7 @@ export async function PUT(
 
     // ノートの所有者チェック
     const existingNote = await prisma.note.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingNote) {
@@ -84,11 +87,44 @@ export async function PUT(
       );
     }
 
-    const { typeId, title, opponent, content, resultId, memo, condition, isPublic } = await request.json();
+    const { 
+      typeId, 
+      title, 
+      opponent, 
+      content, 
+      resultId, 
+      memo, 
+      condition, 
+      isPublic,
+      scoreData,
+      totalSets,
+      wonSets,
+      matchDuration
+    } = await request.json();
+
+    // スコアデータをパース
+    let scoreSets = [];
+    if (scoreData) {
+      try {
+        const parsedScoreData = JSON.parse(scoreData);
+        scoreSets = parsedScoreData.map((set: any, index: number) => ({
+          setNumber: set.setNumber || index + 1,
+          myScore: set.myScore,
+          opponentScore: set.opponentScore
+        }));
+      } catch (error) {
+        console.error('Score data parsing error:', error);
+      }
+    }
+
+    // 既存のscoreSetsを削除
+    await prisma.scoreSet.deleteMany({
+      where: { noteId: id }
+    });
 
     // ノート更新
     const note = await prisma.note.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         typeId: Number(typeId),
         title: title || null,
@@ -98,7 +134,16 @@ export async function PUT(
         memo: memo || null,
         condition: condition || null,
         isPublic: isPublic || false,
-        updatedAt: new Date()
+        totalSets: totalSets ? Number(totalSets) : null,
+        wonSets: wonSets ? Number(wonSets) : null,
+        matchDuration: matchDuration ? Number(matchDuration) : null,
+        updatedAt: new Date(),
+        scoreSets: {
+          create: scoreSets
+        }
+      },
+      include: {
+        scoreSets: true
       }
     });
 
@@ -118,8 +163,9 @@ export async function PUT(
 // ノート削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // 認証チェック
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -140,7 +186,7 @@ export async function DELETE(
 
     // ノートの所有者チェック
     const existingNote = await prisma.note.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingNote) {
@@ -159,7 +205,7 @@ export async function DELETE(
 
     // ノート削除
     await prisma.note.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json(

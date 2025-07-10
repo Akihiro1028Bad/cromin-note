@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
       },
       include: {
         result: true,
-        noteType: true
+        noteType: true,
+        scoreSets: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -69,10 +70,14 @@ export async function GET(request: NextRequest) {
       opponent.matches.push({
         id: note.id,
         title: note.title,
-        result: note.result?.name,
+        result: note.result?.name ?? null,
         noteType: note.noteType.name,
         createdAt: note.createdAt,
-        scoreData: note.scoreData,
+        scoreData: note.scoreSets.length > 0 ? JSON.stringify(note.scoreSets.map(set => ({
+          setNumber: set.setNumber,
+          myScore: set.myScore,
+          opponentScore: set.opponentScore
+        }))) : null,
         wonSets: note.wonSets,
         totalSets: note.totalSets,
         matchDuration: note.matchDuration,
@@ -83,7 +88,7 @@ export async function GET(request: NextRequest) {
       // 試合タイプ別統計
       const typeName = note.noteType.name;
       if (!opponent.typeStats[typeName]) {
-        opponent.typeStats[typeName] = { total: 0, wins: 0, losses: 0, draws: 0 };
+        opponent.typeStats[typeName] = { total: 0, wins: 0, losses: 0, draws: 0, winRate: 0 };
       }
       opponent.typeStats[typeName].total++;
       if (note.result?.name === '勝ち') opponent.typeStats[typeName].wins++;
@@ -119,7 +124,7 @@ export async function GET(request: NextRequest) {
         content: string | null;
         memo: string | null;
       }>;
-      typeStats: Record<string, { total: number; wins: number; losses: number; draws: number }>;
+      typeStats: Record<string, { total: number; wins: number; losses: number; draws: number; winRate: number }>;
       recentForm: string[];
       averageSets: number;
       totalSets: number;

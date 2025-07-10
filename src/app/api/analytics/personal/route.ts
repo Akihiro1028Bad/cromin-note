@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
       },
       include: {
         result: true,
-        noteType: true
+        noteType: true,
+        scoreSets: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
       if (!note.opponent) return acc;
       
       if (!acc[note.opponent]) {
-        acc[note.opponent] = { total: 0, wins: 0, losses: 0, draws: 0, lastMatch: null };
+        acc[note.opponent] = { total: 0, wins: 0, losses: 0, draws: 0, lastMatch: null, winRate: 0 };
       }
       
       acc[note.opponent].total++;
@@ -79,8 +80,11 @@ export async function GET(request: NextRequest) {
       else if (note.result?.name === '負け') acc[note.opponent].losses++;
       else if (note.result?.name === '引き分け') acc[note.opponent].draws++;
       
-      if (!acc[note.opponent].lastMatch || note.createdAt > acc[note.opponent].lastMatch) {
-        acc[note.opponent].lastMatch = note.createdAt;
+      if (
+        !acc[note.opponent]!.lastMatch ||
+        (acc[note.opponent]!.lastMatch !== null && note.createdAt > (acc[note.opponent]!.lastMatch as Date))
+      ) {
+        acc[note.opponent]!.lastMatch = note.createdAt;
       }
       
       return acc;
@@ -90,6 +94,7 @@ export async function GET(request: NextRequest) {
       losses: number; 
       draws: number; 
       lastMatch: Date | null;
+      winRate: number;
     }>);
 
     // 対戦相手別勝率を計算
@@ -103,14 +108,14 @@ export async function GET(request: NextRequest) {
     const typeStats = notes.reduce((acc, note) => {
       const typeName = note.noteType.name;
       if (!acc[typeName]) {
-        acc[typeName] = { total: 0, wins: 0, losses: 0, draws: 0 };
+        acc[typeName] = { total: 0, wins: 0, losses: 0, draws: 0, winRate: 0 };
       }
       acc[typeName].total++;
       if (note.result?.name === '勝ち') acc[typeName].wins++;
       else if (note.result?.name === '負け') acc[typeName].losses++;
       else if (note.result?.name === '引き分け') acc[typeName].draws++;
       return acc;
-    }, {} as Record<string, { total: number; wins: number; losses: number; draws: number }>);
+    }, {} as Record<string, { total: number; wins: number; losses: number; draws: number; winRate: number }>);
 
     // 試合タイプ別勝率を計算
     Object.keys(typeStats).forEach(type => {
@@ -127,7 +132,11 @@ export async function GET(request: NextRequest) {
       result: note.result?.name,
       noteType: note.noteType.name,
       createdAt: note.createdAt,
-      scoreData: note.scoreData,
+      scoreData: note.scoreSets.length > 0 ? JSON.stringify(note.scoreSets.map(set => ({
+        setNumber: set.setNumber,
+        myScore: set.myScore,
+        opponentScore: set.opponentScore
+      }))) : null,
       wonSets: note.wonSets,
       totalSets: note.totalSets
     }));

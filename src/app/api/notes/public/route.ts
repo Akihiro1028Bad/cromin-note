@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const notes = await prisma.note.findMany({
       where: {
@@ -13,38 +13,17 @@ export async function GET(request: NextRequest) {
             nickname: true
           }
         },
-        noteType: {
-          select: {
-            name: true
-          }
-        },
-        result: {
-          select: {
-            name: true
-          }
-        }
+        noteType: true,
+        result: true,
+        scoreSets: true
       },
       orderBy: {
         createdAt: 'desc'
       }
     });
 
-    const mappedNotes = notes.map(note => ({
-      ...note,
-      note_type: note.noteType,
-      noteType: undefined,
-      // 日付フィールドを明示的に含める
-      created_at: note.createdAt,
-      updated_at: note.updatedAt,
-      // スコア関連フィールドを明示的に含める
-      score_data: note.scoreData,
-      total_sets: note.totalSets,
-      won_sets: note.wonSets,
-      match_duration: note.matchDuration
-    }));
-
     return NextResponse.json(
-      { success: true, notes: mappedNotes },
+      { success: true, notes },
       { status: 200 }
     );
   } catch (error) {

@@ -42,50 +42,75 @@ model Result {
 }
 
 model Note {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   title         String?
   opponent      String?
   content       String?
   memo          String?
   condition     String?
-  isPublic      Boolean  @default(false) @map("is_public")
-  userId        String   @map("user_id")
-  typeId        Int      @map("type_id")
-  resultId      Int?     @map("result_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  matchDuration Int?     @map("match_duration")
-  scoreData     String?  @map("score_data")
-  totalSets     Int?     @map("total_sets")
-  wonSets       Int?     @map("won_sets")
-  result        Result?  @relation(fields: [resultId], references: [id])
-  noteType      NoteType @relation(fields: [typeId], references: [id])
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPublic      Boolean    @default(false) @map("is_public")
+  userId        String     @map("user_id")
+  typeId        Int        @map("type_id")
+  resultId      Int?       @map("result_id")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  matchDuration Int?       @map("match_duration")
+  totalSets     Int?       @map("total_sets")
+  wonSets       Int?       @map("won_sets")
+  result        Result?    @relation(fields: [resultId], references: [id])
+  noteType      NoteType   @relation(fields: [typeId], references: [id])
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scoreSets     ScoreSet[]
 
+  @@index([userId, createdAt])
+  @@index([isPublic, createdAt])
+  @@index([typeId, resultId])
   @@map("cromin_notes")
 }
 
+model ScoreSet {
+  id            String @id @default(cuid())
+  noteId        String @map("note_id")
+  setNumber     Int    @map("set_number")
+  myScore       Int    @map("my_score")
+  opponentScore Int    @map("opponent_score")
+  note          Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@map("score_sets")
+}
+
 model NoteTemplate {
-  id            String   @id @default(cuid())
-  userId        String   @map("user_id")
-  name          String
-  typeId        Int      @map("type_id")
-  title         String?
-  opponent      String?
-  content       String?
-  resultId      Int?     @map("result_id")
-  memo          String?
-  condition     String?
-  isPublic      Boolean  @default(false) @map("is_public")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  matchDuration Int?     @map("match_duration")
-  scoreData     String?  @map("score_data")
-  totalSets     Int?     @map("total_sets")
-  wonSets       Int?     @map("won_sets")
-  result        Result?  @relation(fields: [resultId], references: [id])
-  noteType      NoteType @relation(fields: [typeId], references: [id])
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String             @id @default(cuid())
+  userId            String             @map("user_id")
+  name              String
+  typeId            Int                @map("type_id")
+  title             String?
+  opponent          String?
+  content           String?
+  resultId          Int?               @map("result_id")
+  memo              String?
+  condition         String?
+  isPublic          Boolean            @default(false) @map("is_public")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  matchDuration     Int?               @map("match_duration")
+  totalSets         Int?               @map("total_sets")
+  wonSets           Int?               @map("won_sets")
+  result            Result?            @relation(fields: [resultId], references: [id])
+  noteType          NoteType           @relation(fields: [typeId], references: [id])
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  templateScoreSets TemplateScoreSet[]
 
   @@map("note_templates")
+}
+
+model TemplateScoreSet {
+  id            String       @id @default(cuid())
+  templateId    String       @map("template_id")
+  setNumber     Int          @map("set_number")
+  myScore       Int          @map("my_score")
+  opponentScore Int          @map("opponent_score")
+  template      NoteTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("template_score_sets")
 }

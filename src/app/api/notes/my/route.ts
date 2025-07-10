@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
       include: {
         user: true,
         noteType: true,
-        result: true
+        result: true,
+        scoreSets: true
       },
       orderBy: {
         createdAt: 'desc'

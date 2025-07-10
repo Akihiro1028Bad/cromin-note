@@ -24,7 +24,6 @@ export default function NotesPage() {
       console.log('Fetched notes data:', json.notes); // デバッグ用
       // 日付データのデバッグ
       if (json.notes && json.notes.length > 0) {
-        console.log('First note created_at:', json.notes[0].created_at);
         console.log('First note createdAt:', json.notes[0].createdAt);
       }
       setNotes(json.notes || []);
@@ -116,7 +115,7 @@ export default function NotesPage() {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {note.note_type.name}
+                            {note.noteType?.name || '不明'}
                           </span>
                           {note.result && (
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -129,7 +128,7 @@ export default function NotesPage() {
                           )}
                         </div>
                         <span className="text-xs text-gray-400">
-                          {note.created_at ? new Date(note.created_at).toLocaleDateString('ja-JP') : '日付不明'}
+                          {note.createdAt ? new Date(note.createdAt).toLocaleDateString('ja-JP') : '日付不明'}
                         </span>
                       </div>
                       
@@ -156,19 +155,14 @@ export default function NotesPage() {
                       )}
                       
                       {/* スコアの概要 */}
-                      {note.score_data && (
+                      {note.scoreSets && note.scoreSets.length > 0 && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                           <span className="text-green-500">🏆</span>
                           <span>
                             {(() => {
-                              try {
-                                const scores = JSON.parse(note.score_data);
-                                const wonSets = scores.filter((set: any) => set.myScore > set.opponentScore).length;
-                                const totalSets = scores.length;
-                                return `${wonSets}/${totalSets} セット`;
-                              } catch (e) {
-                                return 'スコアあり';
-                              }
+                              const wonSets = note.scoreSets.filter((set) => set.myScore > set.opponentScore).length;
+                              const totalSets = note.scoreSets.length;
+                              return `${wonSets}/${totalSets} セット`;
                             })()}
                           </span>
                         </div>

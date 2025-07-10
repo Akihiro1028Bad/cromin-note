@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { NoteWithRelations } from "@/types/database";
 import PageTransition from "@/components/PageTransition";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { parseScoreData, formatScoreDisplay, getMatchResult } from "@/lib/scoreUtils";
 
 export default function NoteDetailPage() {
   const [note, setNote] = useState<NoteWithRelations | null>(null);
@@ -72,6 +73,18 @@ export default function NoteDetailPage() {
     );
   }
 
+  // スコアデータをscoreSetsから生成
+  const generateScoreData = () => {
+    if (!note.scoreSets || note.scoreSets.length === 0) return null;
+    return JSON.stringify(note.scoreSets.map(set => ({
+      setNumber: set.setNumber,
+      myScore: set.myScore,
+      opponentScore: set.opponentScore
+    })));
+  };
+
+  const scoreData = generateScoreData();
+
   return (
     <PageTransition>
       <main className="min-h-screen bg-gray-100" style={{ backgroundColor: '#f3f4f6' }}>
@@ -129,8 +142,8 @@ export default function NoteDetailPage() {
                     {note.isPublic ? '公開' : '非公開'}
                   </span>
                 </div>
-                <span className="text-xs text-gray-500">
-                  {note.createdAt ? new Date(note.createdAt).toLocaleDateString('ja-JP') : '日付不明'}
+                <span className="text-xs text-gray-400">
+                  {new Date(note.createdAt).toLocaleDateString('ja-JP')}
                 </span>
               </div>
 
@@ -166,7 +179,7 @@ export default function NoteDetailPage() {
               )}
 
               {/* スコア情報 */}
-              {note.scoreData && (
+              {scoreData && (
                 <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-blue-600">🏆</span>
@@ -174,21 +187,19 @@ export default function NoteDetailPage() {
                   </div>
                   <div className="text-blue-600 text-sm space-y-1">
                     {(() => {
-                      try {
-                        const scores = JSON.parse(note.scoreData);
-                        const wonSets = scores.filter((set: any) => set.myScore > set.opponentScore).length;
-                        const totalSets = scores.length;
-                        const result = wonSets > totalSets / 2 ? '勝利' : wonSets < totalSets / 2 ? '敗戦' : '引き分け';
-                        const scoreText = scores.map((set: any) => `${set.myScore}-${set.opponentScore}`).join(', ');
+                      const scoreSets = parseScoreData(scoreData);
+                      if (scoreSets.length > 0) {
+                        const result = getMatchResult(scoreSets);
+                        const scoreText = formatScoreDisplay(scoreSets);
                         return (
                           <>
                             <div className="font-semibold">結果: {result}</div>
                             <div>スコア: {scoreText}</div>
-                            <div>獲得セット: {wonSets}/{totalSets}</div>
+                            <div>獲得セット: {note.wonSets}/{note.totalSets}</div>
                             {note.matchDuration && <div>試合時間: {note.matchDuration}分</div>}
                           </>
                         );
-                      } catch (e) {
+                      } else {
                         return <div>スコアデータの読み込みに失敗しました</div>;
                       }
                     })()}
@@ -215,12 +226,12 @@ export default function NoteDetailPage() {
                     )}
                     
                     {/* DBに保存されたスコアデータ */}
-                    {note.scoreData && (() => {
-                      try {
-                        const scores = JSON.parse(note.scoreData);
-                        const totalPoints = scores.reduce((sum: number, set: any) => sum + set.myScore + set.opponentScore, 0);
-                        const myTotalPoints = scores.reduce((sum: number, set: any) => sum + set.myScore, 0);
-                        const opponentTotalPoints = scores.reduce((sum: number, set: any) => sum + set.opponentScore, 0);
+                    {scoreData && (() => {
+                      const scoreSets = parseScoreData(scoreData);
+                      if (scoreSets.length > 0) {
+                        const totalPoints = scoreSets.reduce((sum, set) => sum + set.myScore + set.opponentScore, 0);
+                        const myTotalPoints = scoreSets.reduce((sum, set) => sum + set.myScore, 0);
+                        const opponentTotalPoints = scoreSets.reduce((sum, set) => sum + set.opponentScore, 0);
                         
                         return (
                           <>
@@ -232,15 +243,15 @@ export default function NoteDetailPage() {
                             {/* セット別スコア */}
                             <div className="mt-2 pt-2 border-t border-green-200">
                               <div className="font-medium mb-1">セット別スコア:</div>
-                              {scores.map((set: any, index: number) => (
+                              {scoreSets.map((set, index) => (
                                 <div key={index} className="text-green-600">
-                                  セット{set.setNumber || index + 1}: {set.myScore}-{set.opponentScore}
+                                  セット{set.setNumber}: {set.myScore}-{set.opponentScore}
                                 </div>
                               ))}
                             </div>
                           </>
                         );
-                      } catch (e) {
+                      } else {
                         return <div>スコアデータの読み込みに失敗しました</div>;
                       }
                     })()}
@@ -253,7 +264,7 @@ export default function NoteDetailPage() {
                     )}
                     
                     {/* データがない場合のメッセージ */}
-                    {!note.totalSets && !note.scoreData && (
+                    {!note.totalSets && !scoreData && (
                       <div className="text-green-500 italic">
                         セット数やスコアの詳細データがありません
                       </div>

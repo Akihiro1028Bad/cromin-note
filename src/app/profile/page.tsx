@@ -97,7 +97,7 @@ export default function ProfilePage() {
             <span className="font-bold">ユーザーID:</span> {user.id}
           </div>
           <div>
-            <span className="font-bold">登録日:</span> {new Date(user.created_at).toLocaleDateString('ja-JP')}
+                            <span className="font-bold">登録日:</span> {new Date(user.createdAt).toLocaleDateString('ja-JP')}
           </div>
         </motion.div>
 
@@ -140,14 +140,12 @@ export default function ProfilePage() {
           <div className="flex gap-4 pt-4">
             <AnimatedButton
               type="submit"
-              variant="primary"
               disabled={submitting}
             >
               {submitting ? <LoadingSpinner size="sm" /> : '更新'}
             </AnimatedButton>
             <AnimatedButton
               type="button"
-              variant="secondary"
               onClick={() => router.back()}
             >
               戻る

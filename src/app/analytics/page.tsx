@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import PageTransition from "@/components/PageTransition";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import Link from "next/link";
+
 
 interface AnalyticsData {
   overview: {
@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
     );
   }
 
-  const { overview, monthlyStats, yearlyStats, opponentStats, typeStats, recentMatches } = data;
+  const { overview, opponentStats, typeStats, recentMatches } = data;
 
   return (
     <PageTransition>

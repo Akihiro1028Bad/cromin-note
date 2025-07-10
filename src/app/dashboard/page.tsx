@@ -1,7 +1,7 @@
 "use client";
 import { useAuth } from "@/hooks/useAuth";
 import PageTransition from "@/components/PageTransition";
-import AnimatedButton from "@/components/AnimatedButton";
+
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -59,7 +59,7 @@ export default function DashboardPage() {
       } else {
         setApiError(json.error || "データ取得に失敗しました");
       }
-    } catch (e) {
+    } catch {
       setApiError("データ取得に失敗しました");
     } finally {
       setApiLoading(false);
@@ -75,7 +75,7 @@ export default function DashboardPage() {
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const thisMonthStats = analytics?.monthlyStats?.[ym];
   const recentNotes = analytics?.recentMatches?.slice(0, 3) || [];
-  const typeStats = analytics?.typeStats || {};
+
 
   return (
     <PageTransition>

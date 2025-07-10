@@ -44,6 +44,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // スコアデータをパース
+    let scoreSets = [];
+    if (scoreData) {
+      try {
+        const parsedScoreData = JSON.parse(scoreData);
+        scoreSets = parsedScoreData.map((set: any, index: number) => ({
+          setNumber: set.setNumber || index + 1,
+          myScore: set.myScore,
+          opponentScore: set.opponentScore
+        }));
+      } catch (error) {
+        console.error('Score data parsing error:', error);
+      }
+    }
+
     // ノート作成
     const note = await prisma.note.create({
       data: {
@@ -56,10 +71,15 @@ export async function POST(request: NextRequest) {
         memo: memo || null,
         condition: condition || null,
         isPublic: isPublic || false,
-        scoreData: scoreData || null,
         totalSets: totalSets ? Number(totalSets) : null,
         wonSets: wonSets ? Number(wonSets) : null,
-        matchDuration: matchDuration ? Number(matchDuration) : null
+        matchDuration: matchDuration ? Number(matchDuration) : null,
+        scoreSets: {
+          create: scoreSets
+        }
+      },
+      include: {
+        scoreSets: true
       }
     });
 

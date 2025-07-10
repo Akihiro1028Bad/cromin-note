@@ -206,7 +206,7 @@ export default function OpponentsPage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
             <h3 className="text-lg font-bold text-gray-900 mb-4">対戦相手一覧</h3>
             <div className="space-y-3">
-              {opponents.map((opponent, index) => (
+              {opponents.map((opponent) => (
                 <div
                   key={opponent.name}
                   className="bg-gray-50 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-colors"
