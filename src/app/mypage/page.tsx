@@ -163,16 +163,16 @@ export default function MyPage() {
 
   return (
     <PageTransition>
-      <main className="min-h-screen bg-gray-100" style={{ backgroundColor: '#f3f4f6' }}>
+      <main className="min-h-screen bg-gray-100">
         {/* ヘッダー - モバイルファースト */}
-        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10" style={{ backgroundColor: '#ffffff' }}>
+        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-bold text-gray-900">マイページ</h1>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => router.push("/dashboard")}
-                  className="p-2 text-white hover:text-gray-200 transition-colors"
+                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -180,7 +180,7 @@ export default function MyPage() {
                 </button>
                 <button
                   onClick={() => router.push("/notes")}
-                  className="p-2 text-white hover:text-gray-200 transition-colors"
+                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />

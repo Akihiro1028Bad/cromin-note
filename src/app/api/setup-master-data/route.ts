@@ -30,17 +30,27 @@ export async function POST() {
       prisma.result.upsert({
         where: { id: 1 },
         update: {},
-        create: { id: 1, name: '勝利' }
+        create: { id: 1, name: '勝ち' }
       }),
       prisma.result.upsert({
         where: { id: 2 },
         update: {},
-        create: { id: 2, name: '敗戦' }
+        create: { id: 2, name: '負け' }
       }),
       prisma.result.upsert({
         where: { id: 3 },
         update: {},
         create: { id: 3, name: '引き分け' }
+      }),
+      prisma.result.upsert({
+        where: { id: 4 },
+        update: {},
+        create: { id: 4, name: '練習のみ' }
+      }),
+      prisma.result.upsert({
+        where: { id: 5 },
+        update: {},
+        create: { id: 5, name: '未定' }
       })
     ]);
 

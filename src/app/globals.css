@@ -164,11 +164,15 @@ input::placeholder, textarea::placeholder {
   body {
     font-size: 16px;
     line-height: 1.5;
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
   }
 
   .card {
     border-radius: 8px;
     margin: 8px 0;
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
   }
 
   .btn-primary {
@@ -180,6 +184,24 @@ input::placeholder, textarea::placeholder {
   button, a, input, select, textarea {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* ヘッダーの背景色を強制 */
+  .bg-white {
+    background-color: var(--bg-secondary) !important;
+  }
+
+  /* テキスト色を強制 */
+  .text-gray-900 {
+    color: var(--text-primary) !important;
+  }
+
+  .text-gray-600 {
+    color: var(--text-secondary) !important;
+  }
+
+  .text-gray-700 {
+    color: var(--text-primary) !important;
   }
 
   /* フローティングアクションボタン */
@@ -265,8 +287,8 @@ input::placeholder, textarea::placeholder {
   }
 }
 
-/* ダークモード対応 */
-@media (prefers-color-scheme: dark) {
+/* ダークモード対応 - 無効化 */
+/* @media (prefers-color-scheme: dark) {
   :root {
     --text-primary: #f9fafb;
     --text-secondary: #d1d5db;
@@ -274,4 +296,4 @@ input::placeholder, textarea::placeholder {
     --bg-secondary: #1f2937;
     --border-color: #374151;
   }
-} 
+} */ 

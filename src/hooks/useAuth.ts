@@ -89,8 +89,12 @@ export const useAuth = () => {
         localStorage.setItem('token', data.token);
         console.log('login - token saved to localStorage');
         
-        // ログイン成功後にユーザー情報を再取得
-        await fetchUser();
+        // ログイン成功後にユーザー情報を即座に設定
+        setAuthState({
+          user: data.user,
+          loading: false,
+          error: null
+        });
         
         return { success: true, message: data.message };
       } else {
@@ -136,6 +140,24 @@ export const useAuth = () => {
     console.log('useAuth - useEffect triggered');
     fetchUser();
   }, []);
+
+  // トークン変更時の監視
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const token = localStorage.getItem('token');
+      if (!token && authState.user) {
+        // トークンが削除された場合、ユーザー状態をリセット
+        setAuthState({
+          user: null,
+          loading: false,
+          error: null
+        });
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [authState.user]);
 
   return {
     user: authState.user,

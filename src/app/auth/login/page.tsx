@@ -26,7 +26,7 @@ function LoginForm() {
   // ログイン成功後のリダイレクト
   useEffect(() => {
     if (user) {
-      router.push('/');
+      router.replace('/dashboard');
     }
   }, [user, router]);
 
@@ -49,7 +49,10 @@ function LoginForm() {
       
       if (result.success) {
         setMessage(result.message);
-        // ログイン成功時は認証状態の更新を待つ（useEffectでリダイレクト）
+        // ログイン成功時は即座にリダイレクト
+        setTimeout(() => {
+          router.replace('/dashboard');
+        }, 1000);
       } else {
         setError(result.message);
       }

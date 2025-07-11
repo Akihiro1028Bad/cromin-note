@@ -15,11 +15,16 @@ export default function Home() {
     }
   }, [user, loading, router]);
 
+  // ローディング中は何も表示しない
+  if (loading) {
+    return null;
+  }
+
   return (
     <PageTransition>
-      <main className="min-h-screen bg-gray-100" style={{ backgroundColor: '#f3f4f6' }}>
+      <main className="min-h-screen bg-gray-100">
         {/* ヘッダー */}
-        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10" style={{ backgroundColor: '#ffffff' }}>
+        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
           <div className="px-4 py-4">
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-bold text-gray-900">Cromin Note</h1>

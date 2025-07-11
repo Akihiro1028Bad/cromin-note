@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  other: {
+    "color-scheme": "light",
+  },
 };
 
 export default function RootLayout({
@@ -35,10 +38,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    <html lang="ja" style={{ colorScheme: 'light' }}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100`}
-        style={{ backgroundColor: '#f3f4f6' }}
       >
         <AuthHeader />
         {children}

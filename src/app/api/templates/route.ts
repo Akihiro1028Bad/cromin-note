@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
       memo, 
       condition, 
       isPublic,
-      scoreData,
       totalSets,
       wonSets,
       matchDuration
@@ -68,7 +67,7 @@ export async function POST(request: NextRequest) {
         memo,
         condition,
         isPublic: !!isPublic,
-        scoreData: scoreData || null,
+
         totalSets: totalSets ? Number(totalSets) : null,
         wonSets: wonSets ? Number(wonSets) : null,
         matchDuration: matchDuration ? Number(matchDuration) : null

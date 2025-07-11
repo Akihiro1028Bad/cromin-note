@@ -1,4 +1,4 @@
-import { PrismaClient } from '../src/generated/prisma'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -52,12 +52,12 @@ async function main() {
   })
   
   console.log('\n=== 挿入されたNoteType ===')
-  insertedTypes.forEach(type => {
+  insertedTypes.forEach((type: any) => {
     console.log(`ID: ${type.id}, Name: ${type.name}`)
   })
   
   console.log('\n=== 挿入されたResult ===')
-  insertedResults.forEach(result => {
+  insertedResults.forEach((result: any) => {
     console.log(`ID: ${result.id}, Name: ${result.name}`)
   })
 }
