@@ -181,8 +181,18 @@ export const loginUser = async (email: string, password: string): Promise<{ succ
       error: error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      code: (error as any)?.code
+      code: (error as any)?.code,
+      name: error instanceof Error ? error.name : undefined
     });
+    
+    // Prismaエラーの詳細な処理
+    if (error instanceof Error) {
+      if (error.message.includes('prepared statement') || error.message.includes('42P05')) {
+        console.error('Prisma connection pool error detected');
+        return { success: false, message: 'データベース接続エラーが発生しました。しばらく時間をおいて再度お試しください。' };
+      }
+    }
+    
     return { success: false, message: `ログインに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
 };
