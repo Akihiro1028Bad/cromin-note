@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withCache } from '@/lib/prisma';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const types = await prisma.noteType.findMany({
-      orderBy: { id: 'asc' }
-    });
+    // キャッシュを使用（10分間キャッシュ）
+    const types = await withCache(
+      'note-types',
+      async () => {
+        return await prisma.noteType.findMany({
+          orderBy: { id: 'asc' }
+        });
+      },
+      10 * 60 * 1000 // 10分
+    );
 
     return NextResponse.json(
       { success: true, types },

@@ -66,6 +66,10 @@ model Note {
   @@index([userId, createdAt])
   @@index([isPublic, createdAt])
   @@index([typeId, resultId])
+  @@index([userId, typeId]) // ユーザーとタイプでの検索
+  @@index([userId, resultId]) // ユーザーと結果での検索
+  @@index([opponent]) // 対戦相手での検索
+  @@index([createdAt]) // 日付での検索
   @@map("cromin_notes")
 }
 
@@ -77,6 +81,7 @@ model ScoreSet {
   opponentScore Int    @map("opponent_score")
   note          Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
 
+  @@index([noteId]) // ノートIDでの検索
   @@map("score_sets")
 }
 

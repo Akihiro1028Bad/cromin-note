@@ -18,8 +18,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '無効なトークンです' }, { status: 401 });
     }
 
-    console.log('Fetching notes for user:', user.userId);
+    // ページネーションパラメータを取得
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const offset = (page - 1) * limit;
 
+    console.log('Fetching notes for user:', user.userId, `page: ${page}, limit: ${limit}`);
+
+    // 総件数を取得
+    const totalCount = await prisma.note.count({
+      where: {
+        userId: user.userId
+      }
+    });
+
+    // ノートを取得（ページネーション適用）
     const notes = await prisma.note.findMany({
       where: {
         userId: user.userId
@@ -32,12 +46,24 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         createdAt: 'desc'
-      }
+      },
+      take: limit,
+      skip: offset
     });
 
-    console.log('Found notes:', notes.length);
+    console.log('Found notes:', notes.length, 'of', totalCount);
 
-    return NextResponse.json({ notes });
+    return NextResponse.json({ 
+      notes,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: page * limit < totalCount,
+        hasPrev: page > 1
+      }
+    });
   } catch (error) {
     console.error('Error fetching user notes:', error);
     
