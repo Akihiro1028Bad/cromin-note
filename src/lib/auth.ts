@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
-import { prisma } from './prisma';
+import { prisma, withPrisma } from './prisma';
 const JWT_SECRET = 'your-super-secret-jwt-key-change-this-in-production';
 // 動的にAPP_URLを取得する関数
 const getAppUrl = (): string => {
@@ -91,110 +91,114 @@ export const sendVerificationEmail = async (email: string, token: string): Promi
 
 // ユーザー登録
 export const registerUser = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
-  try {
-    // 既存ユーザーチェック
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (existingUser) {
-      return { success: false, message: 'このメールアドレスは既に登録されています。' };
-    }
-
-    // パスワードハッシュ化
-    const passwordHash = await hashPassword(password);
-    
-    // 検証トークン生成
-    const verificationToken = generateVerificationToken();
-
-    // ユーザー作成
-    await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        verificationToken
-      }
-    });
-
-    // 確認メール送信
+  return withPrisma(async (prisma) => {
     try {
-      await sendVerificationEmail(email, verificationToken);
-    } catch (emailError) {
-      console.error('Email sending error:', emailError);
-      // メール送信に失敗してもユーザー登録は成功とする
-      return { success: true, message: 'ユーザー登録は完了しましたが、確認メールの送信に失敗しました。' };
-    }
+      // 既存ユーザーチェック
+      const existingUser = await prisma.user.findUnique({
+        where: { email }
+      });
 
-    return { success: true, message: '確認メールを送信しました。メールをご確認ください。' };
-  } catch (error) {
-    console.error('Registration error details:', {
-      error: error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      code: (error as any)?.code
-    });
-    return { success: false, message: `登録に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}` };
-  }
+      if (existingUser) {
+        return { success: false, message: 'このメールアドレスは既に登録されています。' };
+      }
+
+      // パスワードハッシュ化
+      const passwordHash = await hashPassword(password);
+      
+      // 検証トークン生成
+      const verificationToken = generateVerificationToken();
+
+      // ユーザー作成
+      await prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+          verificationToken
+        }
+      });
+
+      // 確認メール送信
+      try {
+        await sendVerificationEmail(email, verificationToken);
+      } catch (emailError) {
+        console.error('Email sending error:', emailError);
+        // メール送信に失敗してもユーザー登録は成功とする
+        return { success: true, message: 'ユーザー登録は完了しましたが、確認メールの送信に失敗しました。' };
+      }
+
+      return { success: true, message: '確認メールを送信しました。メールをご確認ください。' };
+    } catch (error) {
+      console.error('Registration error details:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        code: (error as any)?.code
+      });
+      return { success: false, message: `登録に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
+  });
 };
 
 // ユーザーログイン
 export const loginUser = async (email: string, password: string): Promise<{ success: boolean; user?: any; token?: string; message: string }> => {
-  try {
-    // ユーザー取得
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
+  return withPrisma(async (prisma) => {
+    try {
+      // ユーザー取得
+      const user = await prisma.user.findUnique({
+        where: { email }
+      });
 
-    if (!user) {
-      return { success: false, message: 'メールアドレスまたはパスワードが正しくありません。' };
-    }
-
-    // メール確認チェック
-    if (!user.emailVerified) {
-      return { success: false, message: 'メールアドレスの確認が完了していません。確認メールをご確認ください。' };
-    }
-
-    // パスワード検証
-    const isValidPassword = await verifyPassword(password, user.passwordHash);
-    if (!isValidPassword) {
-      return { success: false, message: 'メールアドレスまたはパスワードが正しくありません。' };
-    }
-
-    // JWTトークン生成
-    const token = generateToken(user.id);
-
-    return { 
-      success: true, 
-      user: { 
-        id: user.id,
-        email: user.email,
-        nickname: user.nickname,
-        emailVerified: user.emailVerified,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      },
-      token,
-      message: 'ログインしました。'
-    };
-  } catch (error) {
-    console.error('Login error details:', {
-      error: error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      code: (error as any)?.code,
-      name: error instanceof Error ? error.name : undefined
-    });
-    
-    // Prismaエラーの詳細な処理
-    if (error instanceof Error) {
-      if (error.message.includes('prepared statement') || error.message.includes('42P05')) {
-        console.error('Prisma connection pool error detected');
-        return { success: false, message: 'データベース接続エラーが発生しました。しばらく時間をおいて再度お試しください。' };
+      if (!user) {
+        return { success: false, message: 'メールアドレスまたはパスワードが正しくありません。' };
       }
+
+      // メール確認チェック
+      if (!user.emailVerified) {
+        return { success: false, message: 'メールアドレスの確認が完了していません。確認メールをご確認ください。' };
+      }
+
+      // パスワード検証
+      const isValidPassword = await verifyPassword(password, user.passwordHash);
+      if (!isValidPassword) {
+        return { success: false, message: 'メールアドレスまたはパスワードが正しくありません。' };
+      }
+
+      // JWTトークン生成
+      const token = generateToken(user.id);
+
+      return { 
+        success: true, 
+        user: { 
+          id: user.id,
+          email: user.email,
+          nickname: user.nickname,
+          emailVerified: user.emailVerified,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        },
+        token,
+        message: 'ログインしました。'
+      };
+    } catch (error) {
+      console.error('Login error details:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        code: (error as any)?.code,
+        name: error instanceof Error ? error.name : undefined
+      });
+      
+      // Prismaエラーの詳細な処理
+      if (error instanceof Error) {
+        if (error.message.includes('prepared statement') || error.message.includes('42P05')) {
+          console.error('Prisma connection pool error detected');
+          return { success: false, message: 'データベース接続エラーが発生しました。しばらく時間をおいて再度お試しください。' };
+        }
+      }
+      
+      return { success: false, message: `ログインに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}` };
     }
-    
-    return { success: false, message: `ログインに失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}` };
-  }
+  });
 };
 
 // メール確認

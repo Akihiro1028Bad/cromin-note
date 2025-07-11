@@ -110,27 +110,3 @@ CREATE INDEX "cromin_notes_is_public_created_at_idx" ON "cromin_notes"("is_publi
 
 -- CreateIndex
 CREATE INDEX "cromin_notes_type_id_result_id_idx" ON "cromin_notes"("type_id", "result_id");
-
--- AddForeignKey
-ALTER TABLE "cromin_notes" ADD CONSTRAINT "cromin_notes_result_id_fkey" FOREIGN KEY ("result_id") REFERENCES "results"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "cromin_notes" ADD CONSTRAINT "cromin_notes_type_id_fkey" FOREIGN KEY ("type_id") REFERENCES "note_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "cromin_notes" ADD CONSTRAINT "cromin_notes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "cromin_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "score_sets" ADD CONSTRAINT "score_sets_note_id_fkey" FOREIGN KEY ("note_id") REFERENCES "cromin_notes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "note_templates" ADD CONSTRAINT "note_templates_result_id_fkey" FOREIGN KEY ("result_id") REFERENCES "results"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "note_templates" ADD CONSTRAINT "note_templates_type_id_fkey" FOREIGN KEY ("type_id") REFERENCES "note_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "note_templates" ADD CONSTRAINT "note_templates_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "cromin_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "template_score_sets" ADD CONSTRAINT "template_score_sets_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "note_templates"("id") ON DELETE CASCADE ON UPDATE CASCADE;
