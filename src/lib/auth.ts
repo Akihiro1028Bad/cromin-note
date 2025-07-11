@@ -6,12 +6,25 @@ import { prisma, withPrisma } from './prisma';
 const JWT_SECRET = 'your-super-secret-jwt-key-change-this-in-production';
 // 動的にAPP_URLを取得する関数
 const getAppUrl = (): string => {
-  // 環境変数から取得を試行
+  // 環境変数から取得を試行（優先順位順）
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL;
   }
   
-  // デフォルトはlocalhost:3000
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+  }
+  
+  // 本番環境の場合は固定URL
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://cromin-note.vercel.app'; // 実際のドメインに変更してください
+  }
+  
+  // 開発環境の場合はlocalhost
   return 'http://localhost:3000';
 };
 
@@ -64,8 +77,16 @@ export const sendVerificationEmail = async (email: string, token: string): Promi
     return;
   }
 
-  const verificationUrl = `${getAppUrl()}/api/auth/verify?token=${token}`;
+  const appUrl = getAppUrl();
+  const verificationUrl = `${appUrl}/api/auth/verify?token=${token}`;
+  console.log('App URL:', appUrl);
   console.log('Generated verification URL:', verificationUrl);
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Available env vars:', {
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    VERCEL_URL: process.env.VERCEL_URL,
+    NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL
+  });
   
   const mailOptions = {
     from: 'Cromin Note <ttmakhr1028@gmail.com>',
