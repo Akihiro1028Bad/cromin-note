@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageTransition, LoadingSpinner } from "../../components";
 
 interface AnalyticsData {
@@ -44,10 +44,19 @@ export default function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'opponents' | 'trends'>('overview');
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetchAnalytics();
   }, []);
+
+  // URLパラメータからタブの状態を取得
+  useEffect(() => {
+    const tab = searchParams.get('tab') as 'overview' | 'opponents' | 'trends';
+    if (tab && ['overview', 'opponents', 'trends'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const fetchAnalytics = async () => {
     try {
@@ -159,29 +168,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          {/* タブナビゲーション */}
-          <div className="px-4 pb-3">
-            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-              {[
-                { id: 'overview', label: '概要', icon: '📊' },
-                { id: 'opponents', label: '対戦相手', icon: '👥' },
-                { id: 'trends', label: 'トレンド', icon: '📈' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+
         </div>
 
         {/* メインコンテンツ */}

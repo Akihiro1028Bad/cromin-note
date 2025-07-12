@@ -1,12 +1,13 @@
 "use client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageTransition, Button, LoadingSpinner } from '@/components';
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'profile' | 'account' | 'app'>('profile');
   const [shouldRedirect, setShouldRedirect] = useState(false);
 
@@ -21,6 +22,14 @@ export default function SettingsPage() {
       router.replace("/auth/login");
     }
   }, [shouldRedirect]); // routerを依存関係から削除
+
+  // URLパラメータからタブの状態を取得
+  useEffect(() => {
+    const tab = searchParams.get('tab') as 'profile' | 'account' | 'app';
+    if (tab && ['profile', 'account', 'app'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const handleLogout = async () => {
     await logout();
@@ -51,29 +60,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* タブナビゲーション */}
-          <div className="px-4 pb-3">
-            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-              {[
-                { id: 'profile', label: 'プロフィール', icon: '👤' },
-                { id: 'account', label: 'アカウント', icon: '🔐' },
-                { id: 'app', label: 'アプリ', icon: '⚙️' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+
         </div>
 
         {/* メインコンテンツ */}

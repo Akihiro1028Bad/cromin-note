@@ -1,7 +1,7 @@
 "use client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageTransition, Button, LoadingSpinner } from '@/components';
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface Note {
@@ -38,6 +38,7 @@ interface AnalyticsData {
 export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [notes, setNotes] = useState<Note[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [apiLoading, setApiLoading] = useState(true);
@@ -53,6 +54,14 @@ export default function HomePage() {
       fetchData();
     }
   }, [user, loading]);
+
+  // URLパラメータからタブの状態を取得
+  useEffect(() => {
+    const tab = searchParams.get('tab') as 'overview' | 'notes' | 'stats';
+    if (tab && ['overview', 'notes', 'stats'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const fetchData = async () => {
     setApiLoading(true);
@@ -105,32 +114,6 @@ export default function HomePage() {
   return (
     <PageTransition>
       <main className="min-h-screen bg-gray-100">
-        {/* タブナビゲーション */}
-        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-          <div className="px-4 py-3">
-            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-              {[
-                { id: 'overview', label: '概要', icon: '🏠' },
-                { id: 'notes', label: 'ノート', icon: '📝' },
-                { id: 'stats', label: '統計', icon: '📊' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* メインコンテンツ */}
         <div className="px-4 py-4">
           {activeTab === 'overview' && (

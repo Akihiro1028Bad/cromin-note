@@ -17,8 +17,6 @@ export default function AuthHeader() {
     router.push("/auth/login");
   };
 
-  if (!user) return null;
-
   const handleNavigation = (path: string) => {
     router.push(path);
     setIsMobileMenuOpen(false);
@@ -27,10 +25,23 @@ export default function AuthHeader() {
   // メニュー外クリックでメニューを閉じる
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      console.log('Click outside detected, target:', event.target);
+      console.log('Mobile menu ref:', mobileMenuRef.current);
+      console.log('Account menu ref:', accountMenuRef.current);
+      
+      // ハンバーガーメニューボタン自体のクリックは無視
+      const target = event.target as Element;
+      if (target.closest('button[aria-label*="メニュー"]') || target.closest('.mobile-menu-toggle')) {
+        console.log('Ignoring click on menu button');
+        return;
+      }
+      
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        console.log('Closing mobile menu due to outside click');
         setIsMobileMenuOpen(false);
       }
       if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        console.log('Closing account menu due to outside click');
         setIsAccountMenuOpen(false);
       }
     };
@@ -41,9 +52,21 @@ export default function AuthHeader() {
     };
   }, []); // 空の依存関係配列で一度だけ実行
 
+  // モバイルメニューの状態変更をログ出力
+  useEffect(() => {
+    console.log('Mobile menu state changed to:', isMobileMenuOpen);
+    console.log('Mobile menu ref exists:', !!mobileMenuRef.current);
+  }, [isMobileMenuOpen]);
+
+  // ユーザーがログインしていない場合は何も表示しない
+  if (!user) return null;
+
   // メニュー切り替え時の自動閉じる機能
   const handleMobileMenuToggle = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+    console.log('Mobile menu toggle clicked, current state:', isMobileMenuOpen);
+    const newState = !isMobileMenuOpen;
+    console.log('Setting new state to:', newState);
+    setIsMobileMenuOpen(newState);
     if (isAccountMenuOpen) {
       setIsAccountMenuOpen(false);
     }
@@ -160,49 +183,68 @@ export default function AuthHeader() {
 
             {/* モバイルメニューボタン */}
             <button
-              onClick={handleMobileMenuToggle}
-              className="md:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMobileMenuToggle();
+              }}
+              className="md:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors mobile-menu-toggle"
+              aria-label={isMobileMenuOpen ? "メニューを閉じる" : "メニューを開く"}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              {isMobileMenuOpen ? (
+                // 閉じるアイコン（X）
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                // 開くアイコン（ハンバーガー）
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
 
         {/* モバイルナビゲーション */}
         {isMobileMenuOpen && (
-          <div className="md:hidden mt-3 pt-3 border-t border-gray-200" ref={mobileMenuRef}>
+          <div 
+            className="md:hidden mt-3 pt-3 border-t border-gray-200" 
+            ref={mobileMenuRef}
+            onClick={(e) => e.stopPropagation()}
+          >
             <nav className="space-y-1">
-              {/* メインナビゲーション */}
-              <div className="mb-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">メインメニュー</h3>
-                <button
-                  onClick={() => handleNavigation("/home")}
-                  className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
-                >
-                  <span className="text-lg">🏠</span>
-                  <span className="font-medium">ホーム</span>
-                </button>
-                <button
-                  onClick={() => handleNavigation("/notes")}
-                  className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
-                >
-                  <span className="text-lg">📝</span>
-                  <span className="font-medium">みんなのノート</span>
-                </button>
-                <button
-                  onClick={() => handleNavigation("/analytics")}
-                  className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
-                >
-                  <span className="text-lg">📊</span>
-                  <span className="font-medium">成績分析</span>
-                </button>
-              </div>
+              {/* ナビゲーションメニュー */}
+              <button
+                onClick={() => handleNavigation("/home")}
+                className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
+              >
+                <span className="text-lg">🏠</span>
+                <span className="font-medium">ホーム</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("/notes")}
+                className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
+              >
+                <span className="text-lg">📝</span>
+                <span className="font-medium">みんなのノート</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("/analytics")}
+                className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
+              >
+                <span className="text-lg">📊</span>
+                <span className="font-medium">成績分析</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("/settings")}
+                className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
+              >
+                <span className="text-lg">⚙️</span>
+                <span className="font-medium">設定</span>
+              </button>
 
               {/* アクション */}
-              <div className="mb-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">アクション</h3>
+              <div className="border-t border-gray-200 pt-3 mt-3">
                 <button
                   onClick={() => handleNavigation("/notes/new")}
                   className="w-full text-left px-3 py-3 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3 font-medium"
@@ -212,21 +254,8 @@ export default function AuthHeader() {
                 </button>
               </div>
 
-              {/* 設定 */}
-              <div className="mb-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">設定</h3>
-                <button
-                  onClick={() => handleNavigation("/settings")}
-                  className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
-                >
-                  <span className="text-lg">⚙️</span>
-                  <span>設定</span>
-                </button>
-              </div>
-
               {/* アカウント */}
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">アカウント</h3>
+              <div className="border-t border-gray-200 pt-3 mt-3">
                 <div className="px-3 py-2 mb-2">
                   <p className="text-sm font-medium text-gray-900">{user.nickname || 'ユーザー'}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>
