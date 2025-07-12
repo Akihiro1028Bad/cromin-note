@@ -133,8 +133,33 @@ export default function AnalyticsPage() {
   return (
     <PageTransition>
       <main className="min-h-screen bg-gray-100 pb-20">
-                {/* タブナビゲーション */}
+                {/* ヘッダー */}
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center">
+                <button
+                  onClick={() => router.push("/home")}
+                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <h1 className="text-lg font-bold text-gray-900 ml-2">成績分析</h1>
+              </div>
+              <button
+                onClick={() => router.push("/notes/new")}
+                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* タブナビゲーション */}
           <div className="px-4 pb-3">
             <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
               {[
@@ -304,6 +329,13 @@ export default function AnalyticsPage() {
         {/* ボトムナビゲーション */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
           <div className="flex justify-around py-2">
+            <button
+              onClick={() => router.push("/home")}
+              className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors text-gray-600 hover:text-blue-600"
+            >
+              <span className="text-lg">🏠</span>
+              <span className="text-xs">ホーム</span>
+            </button>
             {[
               { id: 'overview', label: '概要', icon: '📊' },
               { id: 'opponents', label: '対戦相手', icon: '👥' },
