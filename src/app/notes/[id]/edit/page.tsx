@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { NoteType, Result, Note } from "@/types/database";
-import { PageTransition, LoadingSpinner, ScoreInput, Breadcrumb, useBreadcrumb } from '@/components';
+import { PageTransition, LoadingSpinner, ScoreInput, Button } from '@/components';
 
 interface ScoreSet {
   setNumber: number;
@@ -19,7 +19,6 @@ export default function EditNotePage() {
   const router = useRouter();
   const params = useParams();
   const noteId = params.id as string;
-  const breadcrumbItems = useBreadcrumb();
 
   // フォーム状態
   const [typeId, setTypeId] = useState<number | ''>('');
@@ -40,6 +39,20 @@ export default function EditNotePage() {
   useEffect(() => {
     fetchData();
   }, [noteId]);
+
+  // スコアデータが変更された場合のデバッグログ
+  useEffect(() => {
+    console.log('スコアデータが更新されました:', scoreData);
+    console.log('表示状態:', showScoreInput);
+    console.log('ScoreInputに渡すprops:', {
+      scoreData,
+      totalSets,
+      matchDuration,
+      showScoreInput,
+      scoreDataLength: scoreData.length,
+      initialShow: showScoreInput || scoreData.length > 0
+    });
+  }, [scoreData, showScoreInput, totalSets, matchDuration]);
 
   const fetchData = async () => {
     try {
@@ -66,15 +79,23 @@ export default function EditNotePage() {
       setIsPublic(noteData.isPublic);
       
       // スコアデータの復元
+      console.log('ノートデータ全体:', noteData);
+      console.log('scoreDataフィールド:', noteData.scoreData);
+      console.log('totalSetsフィールド:', noteData.totalSets);
+      console.log('matchDurationフィールド:', noteData.matchDuration);
+      
       if (noteData.scoreData) {
         try {
           const parsedScoreData = JSON.parse(noteData.scoreData);
+          console.log('復元されたスコアデータ:', parsedScoreData);
           setScoreData(parsedScoreData);
           // セット数を正しく設定（保存されたセット数またはスコアデータの長さ）
           const savedTotalSets = noteData.totalSets || parsedScoreData.length;
+          console.log('設定するセット数:', savedTotalSets);
           setTotalSets(savedTotalSets);
           // スコアデータが存在する場合は初期状態でスコア入力セクションを開く
           if (parsedScoreData.length > 0) {
+            console.log('スコアデータが存在するため、スコア入力セクションを表示します');
             setShowScoreInput(true);
           }
         } catch (e) {
@@ -83,6 +104,7 @@ export default function EditNotePage() {
           setTotalSets(0);
         }
       } else {
+        console.log('scoreDataフィールドが存在しないため、空のスコアデータを設定します');
         setScoreData([]);
         setTotalSets(0);
       }
@@ -96,7 +118,7 @@ export default function EditNotePage() {
     } catch (error) {
       console.error('Error fetching data:', error);
       alert('ノートの取得に失敗しました。');
-      router.push('/mypage');
+      router.push('/notes');
     } finally {
       setLoading(false);
     }
@@ -173,19 +195,15 @@ export default function EditNotePage() {
 
   return (
     <PageTransition>
-      <main className="min-h-screen bg-gray-100">
-        {/* スティッキーヘッダー */}
-        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+      <main className="min-h-screen bg-bg-primary">
+        {/* ヘッダー */}
+        <div className="bg-bg-secondary border-b border-border-color shadow-sm sticky top-0 z-10">
           <div className="px-4 py-3">
-            {/* パンくずナビゲーション */}
-            <div className="mb-2">
-              <Breadcrumb items={breadcrumbItems} />
-            </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => router.push(`/notes/${noteId}`)}
-                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  className="p-2 text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-gray-100"
                   title="詳細に戻る"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,41 +211,42 @@ export default function EditNotePage() {
                   </svg>
                 </button>
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900">ノート編集</h1>
-                  <p className="text-xs text-gray-500">ID: {noteId}</p>
+                  <h1 className="text-lg font-bold text-text-primary">ノート編集</h1>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => router.push('/mypage')}
-                  className="px-3 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                <Button
+                  color="gray"
+                  size="md"
+                  onClick={() => router.push(`/notes/${noteId}`)}
                 >
                   キャンセル
-                </button>
-                <button
-                  onClick={handleSubmit}
+                </Button>
+                <Button
+                  color="blue"
+                  size="md"
+                  onClick={() => handleSubmit(new Event('submit') as any)}
                   disabled={submitting || !typeId}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? '更新中...' : '更新'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         </div>
 
         {/* メインコンテンツ */}
-        <div className="px-4 py-4">
+        <div className="px-4 py-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* 種別選択 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                種別 <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                種別 <span className="text-danger">*</span>
               </label>
               <select
                 value={typeId}
                 onChange={(e) => setTypeId(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
                 required
               >
                 <option value="">種別を選択</option>
@@ -241,7 +260,7 @@ export default function EditNotePage() {
 
             {/* タイトル */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-primary mb-2">
                 タイトル
               </label>
               <input
@@ -249,13 +268,13 @@ export default function EditNotePage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="タイトルを入力"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
               />
             </div>
 
             {/* 対戦相手 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-primary mb-2">
                 対戦相手
               </label>
               <input
@@ -263,19 +282,19 @@ export default function EditNotePage() {
                 value={opponent}
                 onChange={(e) => setOpponent(e.target.value)}
                 placeholder="対戦相手を入力"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
               />
             </div>
 
             {/* 結果 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-primary mb-2">
                 結果
               </label>
               <select
                 value={resultId}
                 onChange={(e) => setResultId(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
               >
                 <option value="">結果を選択</option>
                 {results.map((result) => (
@@ -288,7 +307,7 @@ export default function EditNotePage() {
 
             {/* スコア入力 */}
             {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="bg-bg-secondary rounded-lg p-4 border border-border-color">
                 <ScoreInput
                   scoreData={scoreData}
                   onScoreChange={setScoreData}
@@ -296,14 +315,14 @@ export default function EditNotePage() {
                   onTotalSetsChange={setTotalSets}
                   matchDuration={matchDuration}
                   onMatchDurationChange={setMatchDuration}
-                  initialShow={showScoreInput}
+                  initialShow={showScoreInput || scoreData.length > 0}
                 />
               </div>
             )}
 
             {/* 内容 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-primary mb-2">
                 内容
               </label>
               <textarea
@@ -311,13 +330,13 @@ export default function EditNotePage() {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="練習内容や試合の詳細を記録"
                 rows={4}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200 resize-none"
               />
             </div>
 
             {/* メモ */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-primary mb-2">
                 メモ
               </label>
               <textarea
@@ -325,13 +344,13 @@ export default function EditNotePage() {
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="追加のメモがあれば記録"
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200 resize-none"
               />
             </div>
 
             {/* 体調 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-text-primary mb-2">
                 体調
               </label>
               <input
@@ -339,16 +358,16 @@ export default function EditNotePage() {
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
                 placeholder="体調やコンディションを記録"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
               />
             </div>
 
             {/* 公開設定 */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <div className="bg-bg-secondary rounded-lg p-4 border border-border-color">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-gray-900">公開設定</h3>
-                  <p className="text-sm text-gray-600">他のプレイヤーに公開するかどうか</p>
+                  <h3 className="text-base font-bold text-text-primary">公開設定</h3>
+                  <p className="text-sm text-text-secondary">他のプレイヤーに公開するかどうか</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -357,7 +376,7 @@ export default function EditNotePage() {
                     onChange={(e) => setIsPublic(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
             </div>
@@ -369,7 +388,7 @@ export default function EditNotePage() {
           <button
             onClick={handleSubmit}
             disabled={submitting || !typeId}
-            className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-14 h-14 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <LoadingSpinner size="sm" />

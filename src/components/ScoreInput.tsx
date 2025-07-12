@@ -30,10 +30,31 @@ export default function ScoreInput({
 
   // スコアデータが存在する場合は表示状態を維持
   useEffect(() => {
+    console.log('ScoreInput: scoreData.length =', scoreData.length, 'showScoreInput =', showScoreInput);
     if (scoreData.length > 0 && !showScoreInput) {
+      console.log('ScoreInput: スコアデータが存在するため、表示状態をtrueに設定します');
       setShowScoreInput(true);
     }
   }, [scoreData.length, showScoreInput]);
+
+  // initialShowプロパティが変更された場合の処理
+  useEffect(() => {
+    console.log('ScoreInput: initialShow =', initialShow);
+    if (initialShow) {
+      console.log('ScoreInput: initialShowがtrueのため、表示状態をtrueに設定します');
+      setShowScoreInput(true);
+    }
+  }, [initialShow]);
+
+  // コンポーネントマウント時の初期化
+  useEffect(() => {
+    console.log('ScoreInput: コンポーネントマウント時の状態');
+    console.log('  - scoreData:', scoreData);
+    console.log('  - totalSets:', totalSets);
+    console.log('  - matchDuration:', matchDuration);
+    console.log('  - initialShow:', initialShow);
+    console.log('  - showScoreInput:', showScoreInput);
+  }, []);
 
   const addSet = () => {
     const newSet: ScoreSet = {

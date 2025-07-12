@@ -18,7 +18,11 @@ export async function GET(
       include: {
         noteType: true,
         result: true,
-        scoreSets: true,
+        scoreSets: {
+          orderBy: {
+            setNumber: 'asc'
+          }
+        },
         user: {
           select: {
             id: true,
@@ -35,8 +39,21 @@ export async function GET(
       );
     }
 
+    // scoreSetsからscoreDataを生成
+    const scoreData = note.scoreSets.map((set: any) => ({
+      setNumber: set.setNumber,
+      myScore: set.myScore,
+      opponentScore: set.opponentScore
+    }));
+
+    // レスポンス用のノートオブジェクトを作成
+    const noteWithScoreData = {
+      ...note,
+      scoreData: JSON.stringify(scoreData)
+    };
+
     return NextResponse.json(
-      { success: true, note },
+      { success: true, note: noteWithScoreData },
       { status: 200 }
     );
   } catch (error) {
