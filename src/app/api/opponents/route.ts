@@ -7,7 +7,28 @@ export async function GET(request: NextRequest) {
   try {
     logger.info('対戦相手一覧取得開始')
 
+    // 認証チェック
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+    if (!token) {
+      return NextResponse.json(
+        { error: '認証されていません。' },
+        { status: 401 }
+      )
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json(
+        { error: '無効なトークンです。' },
+        { status: 401 }
+      )
+    }
+
+    // ユーザーごとの対戦相手を取得
     const opponents = await prisma.opponent.findMany({
+      where: {
+        userId: decoded.userId
+      },
       orderBy: { name: 'asc' }
     })
 
@@ -54,9 +75,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 既存の対戦相手名との重複チェック
+    // 既存の対戦相手名との重複チェック（同じユーザー内で）
     const existingOpponent = await prisma.opponent.findUnique({
-      where: { name: name.trim() }
+      where: {
+        name_userId: {
+          name: name.trim(),
+          userId: decoded.userId
+        }
+      }
     })
 
     if (existingOpponent) {
@@ -69,7 +95,8 @@ export async function POST(request: NextRequest) {
     // 対戦相手作成
     const opponent = await prisma.opponent.create({
       data: {
-        name: name.trim()
+        name: name.trim(),
+        userId: decoded.userId
       }
     })
 

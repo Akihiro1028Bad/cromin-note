@@ -21,7 +21,7 @@ export default function NewNotePage() {
   // フォーム状態
   const [typeId, setTypeId] = useState<number | ''>('');
   const [title, setTitle] = useState('');
-  const [opponent, setOpponent] = useState('');
+  const [opponentIds, setOpponentIds] = useState<string[]>([]); // 変更: 対戦相手ID配列
   const [content, setContent] = useState('');
   const [resultId, setResultId] = useState<number | ''>('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -73,7 +73,7 @@ export default function NewNotePage() {
         alert('スコアを入力してください。');
         return;
       }
-      if (!isValidOpponent(opponent, selectedType.name)) {
+      if (!isValidOpponent(opponentIds, selectedType.name)) {
         alert('対戦相手を入力してください。');
         return;
       }
@@ -96,7 +96,7 @@ export default function NewNotePage() {
         body: JSON.stringify({
           typeId,
           title,
-          opponent,
+          opponentIds, // 変更: 対戦相手ID配列を送信
           content,
           resultId,
           categoryId,
@@ -147,16 +147,15 @@ export default function NewNotePage() {
   };
 
   // 対戦相手が有効かどうかを判定する関数
-  const isValidOpponent = (opponent: string, noteType: string): boolean => {
-    if (!opponent.trim()) return false;
+  const isValidOpponent = (opponentIds: string[], noteType: string): boolean => {
+    if (opponentIds.length === 0) return false;
     
     const isDoubles = noteType === 'ダブルス' || noteType === 'ミックスダブルス';
     if (isDoubles) {
-      const opponents = opponent.split(',').map(o => o.trim()).filter(o => o);
-      return opponents.length >= 2;
+      return opponentIds.length >= 2;
     }
     
-    return true;
+    return opponentIds.length >= 1;
   };
 
   if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
@@ -238,8 +237,8 @@ export default function NewNotePage() {
             {/* 対戦相手（ゲーム練習・公式試合のみ・必須） */}
             {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
               <OpponentSelect
-                value={opponent}
-                onChange={setOpponent}
+                value={opponentIds}
+                onChange={setOpponentIds}
                 category={selectedCategory?.name || ''}
                 isRequired={true}
               />
@@ -345,7 +344,7 @@ export default function NewNotePage() {
                             typeId,
                             title.trim(),
                             categoryId,
-                            isValidOpponent(opponent, selectedType?.name || ''),
+                            isValidOpponent(opponentIds, selectedType?.name || ''),
                             isValidScoreData(scoreData)
                           ]
                         : [
@@ -372,7 +371,7 @@ export default function NewNotePage() {
                               typeId,
                               title.trim(),
                               categoryId,
-                              isValidOpponent(opponent, selectedType?.name || ''),
+                              isValidOpponent(opponentIds, selectedType?.name || ''),
                               isValidScoreData(scoreData)
                             ]
                           : [
@@ -395,7 +394,7 @@ export default function NewNotePage() {
               size="lg"
               onClick={() => handleSubmit(new Event('submit') as any)}
               disabled={submitting || !typeId || !title.trim() || 
-                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponent, selectedType.name) || !categoryId))}
+                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponentIds, selectedType.name) || !categoryId))}
               className="w-full"
             >
               {submitting ? '投稿中...' : '投稿'}

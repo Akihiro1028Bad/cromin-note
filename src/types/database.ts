@@ -50,7 +50,6 @@ export interface Note {
   userId: string
   typeId: number
   title: string | null
-  opponent: string | null
   content: string | null
   resultId: number | null
   categoryId: number | null

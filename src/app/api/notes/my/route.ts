@@ -76,7 +76,12 @@ export async function GET(request: NextRequest) {
         user: true,
         noteType: true,
         result: true,
-        scoreSets: true
+        scoreSets: true,
+        noteOpponents: {
+          include: {
+            opponent: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'

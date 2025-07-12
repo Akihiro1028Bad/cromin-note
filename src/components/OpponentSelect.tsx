@@ -9,8 +9,8 @@ interface Opponent {
 }
 
 interface OpponentSelectProps {
-  value: string
-  onChange: (value: string) => void
+  value: string[]
+  onChange: (value: string[]) => void
   category: string
   isRequired?: boolean
   disabled?: boolean
@@ -27,12 +27,12 @@ export default function OpponentSelect({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedOpponents, setSelectedOpponents] = useState<string[]>([])
+  const [selectedOpponentIds, setSelectedOpponentIds] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
 
   // 前回の値を記録
-  const prevSelectedOpponentsRef = useRef<string[]>([])
-  const prevValueRef = useRef<string>('')
+  const prevSelectedOpponentIdsRef = useRef<string[]>([])
+  const prevValueRef = useRef<string[]>([])
 
   // カテゴリに応じてシングルスかダブルスかを判定
   const isDoubles = category === 'ダブルス' || category === 'ミックスダブルス'
@@ -41,7 +41,12 @@ export default function OpponentSelect({
   const fetchOpponents = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/opponents')
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/opponents', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (!response.ok) {
         throw new Error('対戦相手の取得に失敗しました')
       }
@@ -60,55 +65,50 @@ export default function OpponentSelect({
 
   // 初期値の設定
   useEffect(() => {
-    if (value !== prevValueRef.current) {
-      if (value) {
-        const opponentNames = value.split(',').map(o => o.trim()).filter(o => o)
-        setSelectedOpponents(opponentNames)
-      } else {
-        setSelectedOpponents([])
-      }
-      prevValueRef.current = value
+    if (JSON.stringify(value) !== JSON.stringify(prevValueRef.current)) {
+      setSelectedOpponentIds(value || [])
+      prevValueRef.current = [...value]
     }
   }, [value])
 
   // 選択された対戦相手の変更を親コンポーネントに通知
   useEffect(() => {
-    const currentSelected = selectedOpponents.join(', ')
-    const prevSelected = prevSelectedOpponentsRef.current.join(', ')
+    const currentSelected = JSON.stringify(selectedOpponentIds)
+    const prevSelected = JSON.stringify(prevSelectedOpponentIdsRef.current)
     
     // 実際に値が変更された場合のみ親コンポーネントに通知
     if (currentSelected !== prevSelected) {
-      onChange(currentSelected)
-      prevSelectedOpponentsRef.current = [...selectedOpponents]
+      onChange(selectedOpponentIds)
+      prevSelectedOpponentIdsRef.current = [...selectedOpponentIds]
     }
-  }, [selectedOpponents]) // onChangeを依存関係から削除
+  }, [selectedOpponentIds]) // onChangeを依存関係から削除
 
   // 対戦相手を選択（指定された位置に設定）
-  const handleOpponentSelect = (opponentName: string, position: number) => {
-    const newSelected = [...selectedOpponents]
-    newSelected[position] = opponentName
-    setSelectedOpponents(newSelected)
+  const handleOpponentSelect = (opponentId: string, position: number) => {
+    const newSelected = [...selectedOpponentIds]
+    newSelected[position] = opponentId
+    setSelectedOpponentIds(newSelected)
   }
 
   // 選択をクリア
   const handleClearSelection = (position: number) => {
-    const newSelected = [...selectedOpponents]
+    const newSelected = [...selectedOpponentIds]
     newSelected[position] = ''
-    setSelectedOpponents(newSelected)
+    setSelectedOpponentIds(newSelected)
   }
 
   // 新規対戦相手登録後の処理
   const handleOpponentCreated = (opponent: Opponent) => {
     setOpponents(prev => [...prev, opponent])
     // 新しく登録された対戦相手を最初の空いている位置に自動選択
-    const emptyPosition = selectedOpponents.findIndex(name => !name)
+    const emptyPosition = selectedOpponentIds.findIndex(id => !id)
     if (emptyPosition !== -1) {
-      handleOpponentSelect(opponent.name, emptyPosition)
-    } else if (selectedOpponents.length < (isDoubles ? 2 : 1)) {
+      handleOpponentSelect(opponent.id, emptyPosition)
+    } else if (selectedOpponentIds.length < (isDoubles ? 2 : 1)) {
       // 配列が短い場合は追加
-      const newSelected = [...selectedOpponents]
-      newSelected.push(opponent.name)
-      setSelectedOpponents(newSelected)
+      const newSelected = [...selectedOpponentIds]
+      newSelected.push(opponent.id)
+      setSelectedOpponentIds(newSelected)
     }
   }
 
@@ -121,9 +121,17 @@ export default function OpponentSelect({
   const isValid = () => {
     if (!isRequired) return true
     if (isDoubles) {
-      return selectedOpponents.length >= 2 && selectedOpponents[0] && selectedOpponents[1]
+      return selectedOpponentIds.length >= 2 && selectedOpponentIds[0] && selectedOpponentIds[1]
     }
-    return selectedOpponents.length >= 1 && selectedOpponents[0]
+    return selectedOpponentIds.length >= 1 && selectedOpponentIds[0]
+  }
+
+  // 選択された対戦相手の名前を取得
+  const getSelectedOpponentName = (position: number): string => {
+    const opponentId = selectedOpponentIds[position]
+    if (!opponentId) return ''
+    const opponent = opponents.find(o => o.id === opponentId)
+    return opponent?.name || ''
   }
 
   if (loading) {
@@ -161,8 +169,13 @@ export default function OpponentSelect({
       <div className="space-y-2">
         {/* 1番目の選択欄 */}
         <OpponentSelectField
-          value={selectedOpponents[0] || ''}
-          onSelect={(opponentName) => handleOpponentSelect(opponentName, 0)}
+          value={getSelectedOpponentName(0)}
+          onSelect={(opponentName) => {
+            const opponent = opponents.find(o => o.name === opponentName)
+            if (opponent) {
+              handleOpponentSelect(opponent.id, 0)
+            }
+          }}
           onClear={() => handleClearSelection(0)}
           opponents={opponents}
           disabled={disabled}
@@ -173,8 +186,13 @@ export default function OpponentSelect({
         {/* 2番目の選択欄（ダブルスの場合のみ） */}
         {isDoubles && (
           <OpponentSelectField
-            value={selectedOpponents[1] || ''}
-            onSelect={(opponentName) => handleOpponentSelect(opponentName, 1)}
+            value={getSelectedOpponentName(1)}
+            onSelect={(opponentName) => {
+              const opponent = opponents.find(o => o.name === opponentName)
+              if (opponent) {
+                handleOpponentSelect(opponent.id, 1)
+              }
+            }}
             onClear={() => handleClearSelection(1)}
             opponents={opponents}
             disabled={disabled}
@@ -199,11 +217,11 @@ export default function OpponentSelect({
 
       {isRequired && !isValid() && (
         <p className="mt-1 text-sm text-red-600">
-          {isDoubles ? '対戦相手を2名選択してください' : '対戦相手を1名選択してください'}
+          {isDoubles ? '2名の対戦相手を選択してください' : '対戦相手を選択してください'}
         </p>
       )}
 
-      {/* 新規登録モーダル */}
+      {/* 対戦相手選択モーダル */}
       <OpponentModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

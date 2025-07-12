@@ -28,7 +28,7 @@ export default function EditNotePage() {
   // フォーム状態
   const [typeId, setTypeId] = useState<number | null>(null);
   const [title, setTitle] = useState('');
-  const [opponent, setOpponent] = useState('');
+  const [opponentIds, setOpponentIds] = useState<string[]>([]); // 変更: 対戦相手ID配列
   const [content, setContent] = useState('');
   const [resultId, setResultId] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -71,13 +71,20 @@ export default function EditNotePage() {
         setNote(noteData);
         setTypeId(noteData.typeId);
         setTitle(noteData.title || '');
-        setOpponent(noteData.opponent || '');
         setContent(noteData.content || '');
         setResultId(noteData.resultId);
         setCategoryId(noteData.categoryId);
         setMemo(noteData.memo || '');
         setCondition(noteData.condition || '');
         setIsPublic(noteData.isPublic);
+        
+        // 対戦相手ID配列を設定（note_opponentsから取得）
+        if (noteData.noteOpponents && Array.isArray(noteData.noteOpponents)) {
+          const opponentIds = noteData.noteOpponents.map((no: any) => no.opponentId);
+          setOpponentIds(opponentIds);
+        } else {
+          setOpponentIds([]);
+        }
         
         // スコアデータ復元
         if (noteData.scoreData) {
@@ -115,16 +122,15 @@ export default function EditNotePage() {
     return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
   };
 
-  const isValidOpponent = (opponent: string, category: string): boolean => {
-    if (!opponent.trim()) return false;
+  const isValidOpponent = (opponentIds: string[], category: string): boolean => {
+    if (opponentIds.length === 0) return false;
     
     const isDoubles = category === 'ダブルス' || category === 'ミックスダブルス';
     if (isDoubles) {
-      const opponents = opponent.split(',').map(o => o.trim()).filter(o => o);
-      return opponents.length >= 2;
+      return opponentIds.length >= 2;
     }
     
-    return true;
+    return opponentIds.length >= 1;
   };
 
   // 選択された種別とカテゴリをメモ化
@@ -148,7 +154,7 @@ export default function EditNotePage() {
           typeId,
           title.trim(),
           categoryId,
-          isValidOpponent(opponent, selectedCategory?.name || ''),
+          isValidOpponent(opponentIds, selectedCategory?.name || ''),
           isValidScoreData(scoreData)
         ]
       : [
@@ -163,7 +169,7 @@ export default function EditNotePage() {
     title,
     typeId,
     categoryId,
-    opponent,
+    opponentIds,
     scoreData,
     selectedCategory?.name
   ]);
@@ -179,7 +185,7 @@ export default function EditNotePage() {
         alert('スコアを入力してください。');
         return;
       }
-      if (!isValidOpponent(opponent, selectedCategory?.name || '')) {
+      if (!isValidOpponent(opponentIds, selectedCategory?.name || '')) {
         alert('対戦相手を入力してください。');
         return;
       }
@@ -201,7 +207,7 @@ export default function EditNotePage() {
       const requestBody = {
         typeId,
         title,
-        opponent,
+        opponentIds, // 変更: 対戦相手ID配列を送信
         content,
         resultId,
         categoryId,
@@ -357,8 +363,8 @@ export default function EditNotePage() {
             {/* 対戦相手（ゲーム練習・公式試合のみ・必須） */}
             {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
               <OpponentSelect
-                value={opponent}
-                onChange={setOpponent}
+                value={opponentIds}
+                onChange={setOpponentIds}
                 category={selectedCategory?.name || ''}
                 isRequired={true}
               />
@@ -446,18 +452,18 @@ export default function EditNotePage() {
         </div>
 
         {/* 固定フッター */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
+        <div className="fixed bottom-0 left-0 right-0 bg-bg-secondary border-t border-border-color shadow-lg z-20">
           <div className="px-4 py-4">
             {/* 必須項目進捗バー */}
             {!submitting && (
               <div className="mb-3">
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <div className="flex justify-between text-xs text-text-secondary mb-1">
                   <span>必須項目</span>
                   <span>{progressData.completed}/{progressData.total}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${progressData.percentage}%` }}
                   ></div>
                 </div>
@@ -470,7 +476,7 @@ export default function EditNotePage() {
               size="lg"
               onClick={() => handleSubmit(new Event('submit') as any)}
               disabled={submitting || !typeId || !title.trim() || 
-                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponent, selectedCategory?.name || '') || !categoryId))}
+                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponentIds, selectedCategory?.name || '') || !categoryId))}
               className="w-full"
             >
               {submitting ? '更新中...' : '更新'}

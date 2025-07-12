@@ -28,6 +28,11 @@ export async function GET(
             id: true,
             nickname: true
           }
+        },
+        noteOpponents: {
+          include: {
+            opponent: true
+          }
         }
       }
     });
@@ -163,10 +168,9 @@ export async function PUT(
       );
     }
 
-    const { 
+    const {
       typeId, 
       title, 
-      opponent, 
       content, 
       resultId, 
       categoryId,
@@ -176,7 +180,8 @@ export async function PUT(
       scoreData,
       totalSets,
       wonSets,
-      matchDuration
+      matchDuration,
+      opponentIds // 追加: 対戦相手ID配列
     } = await request.json();
 
     // スコアデータをパース
@@ -199,13 +204,17 @@ export async function PUT(
       where: { noteId: id }
     });
 
+    // 既存のnote_opponentsを削除
+    await prisma.noteOpponent.deleteMany({
+      where: { noteId: id }
+    });
+
     // ノート更新
     const note = await prisma.note.update({
       where: { id },
       data: {
         typeId: Number(typeId),
         title: title || null,
-        opponent: opponent || null,
         content: content || null,
         resultId: resultId ? Number(resultId) : null,
         categoryId: categoryId ? Number(categoryId) : null,
@@ -225,8 +234,30 @@ export async function PUT(
       }
     });
 
+    // 対戦相手の紐付け（note_opponents中間テーブル）
+    if (Array.isArray(opponentIds) && opponentIds.length > 0) {
+      await prisma.noteOpponent.createMany({
+        data: opponentIds.map((opponentId: string) => ({
+          noteId: note.id,
+          opponentId
+        }))
+      });
+    }
+
+    // note_opponentsも含めて返す
+    const noteWithOpponents = await prisma.note.findUnique({
+      where: { id: note.id },
+      include: {
+        scoreSets: true,
+        noteOpponents: {
+          include: {
+            opponent: true
+          }
+        }
+      }
+    });
+
     const duration = Date.now() - startTime;
-    
     // 成功ログ
     logger.logDatabaseOperation('update_note', duration, {
       requestId,
@@ -237,7 +268,7 @@ export async function PUT(
     });
 
     return NextResponse.json(
-      { success: true, note },
+      { success: true, note: noteWithOpponents },
       { status: 200 }
     );
   } catch (error) {

@@ -19,6 +19,7 @@ model User {
   createdAt         DateTime       @default(now()) @map("created_at")
   updatedAt         DateTime       @updatedAt @map("updated_at")
   notes             Note[]
+  opponents         Opponent[]
 
   @@map("cromin_users")
 }
@@ -49,18 +50,21 @@ model Category {
 
 model Opponent {
   id            String         @id @default(cuid())
-  name          String         @unique
+  name          String
+  userId        String         @map("user_id")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   noteOpponents NoteOpponent[]
 
+  @@unique([name, userId]) // ユーザーごとに名前の重複を防ぐ
+  @@index([userId])
   @@map("opponents")
 }
 
 model Note {
   id            String     @id @default(cuid())
   title         String?
-  opponent      String?
   content       String?
   memo          String?
   condition     String?
@@ -86,7 +90,6 @@ model Note {
   @@index([typeId, resultId])
   @@index([userId, typeId]) // ユーザーとタイプでの検索
   @@index([userId, resultId]) // ユーザーと結果での検索
-  @@index([opponent]) // 対戦相手での検索
   @@index([createdAt]) // 日付での検索
   @@index([categoryId]) // カテゴリでの検索
   @@map("cromin_notes")

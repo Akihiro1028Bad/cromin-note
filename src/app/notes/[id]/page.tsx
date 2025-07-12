@@ -169,10 +169,12 @@ export default function NoteDetailPage() {
               )}
 
               {/* 対戦相手 */}
-              {note.opponent && (
+              {note.noteOpponents && note.noteOpponents.length > 0 && (
                 <div className="flex items-center gap-2 text-sm text-text-secondary">
                   <span className="text-primary">👤</span>
-                  <span>対戦相手: {note.opponent}</span>
+                  <span>
+                    対戦相手: {note.noteOpponents.map(no => no.opponent.name).join(', ')}
+                  </span>
                 </div>
               )}
             </div>

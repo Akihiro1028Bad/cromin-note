@@ -24,20 +24,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { 
-      typeId, 
-      title, 
-      opponent, 
-      content, 
-      resultId, 
+    const {
+      typeId,
+      title,
+      content,
+      resultId,
       categoryId,
-      memo, 
-      condition, 
+      memo,
+      condition,
       isPublic,
       scoreData,
       totalSets,
       wonSets,
-      matchDuration
+      matchDuration,
+      opponentIds // 追加: 対戦相手ID配列
     } = await request.json();
 
     // バリデーション
@@ -87,7 +87,6 @@ export async function POST(request: NextRequest) {
         userId: decoded.userId,
         typeId: Number(typeId),
         title: title || null,
-        opponent: opponent || null,
         content: content || null,
         resultId: calculatedResultId ? Number(calculatedResultId) : null,
         categoryId: categoryId ? Number(categoryId) : null,
@@ -106,8 +105,31 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // 対戦相手の紐付け（note_opponents中間テーブル）
+    if (Array.isArray(opponentIds) && opponentIds.length > 0) {
+      await prisma.noteOpponent.createMany({
+        data: opponentIds.map((opponentId: string) => ({
+          noteId: note.id,
+          opponentId
+        }))
+      });
+    }
+
+    // note_opponentsも含めて返す
+    const noteWithOpponents = await prisma.note.findUnique({
+      where: { id: note.id },
+      include: {
+        scoreSets: true,
+        noteOpponents: {
+          include: {
+            opponent: true
+          }
+        }
+      }
+    });
+
     return NextResponse.json(
-      { success: true, note },
+      { success: true, note: noteWithOpponents },
       { status: 201 }
     );
   } catch (error) {
