@@ -129,25 +129,32 @@ export const registerUser = async (email: string, password: string): Promise<{ s
       // 検証トークン生成
       const verificationToken = generateVerificationToken();
 
+      // メール設定が不完全な場合は自動確認
+      const emailVerified = !process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD;
+
       // ユーザー作成
       await prisma.user.create({
         data: {
           email,
           passwordHash,
-          verificationToken
+          verificationToken: emailVerified ? null : verificationToken,
+          emailVerified
         }
       });
 
-      // 確認メール送信
-      try {
-        await sendVerificationEmail(email, verificationToken);
-      } catch (emailError) {
-        console.error('Email sending error:', emailError);
-        // メール送信に失敗してもユーザー登録は成功とする
-        return { success: true, message: 'ユーザー登録は完了しましたが、確認メールの送信に失敗しました。' };
+      // 確認メール送信（設定がある場合のみ）
+      if (!emailVerified) {
+        try {
+          await sendVerificationEmail(email, verificationToken);
+        } catch (emailError) {
+          console.error('Email sending error:', emailError);
+          // メール送信に失敗してもユーザー登録は成功とする
+          return { success: true, message: 'ユーザー登録は完了しましたが、確認メールの送信に失敗しました。' };
+        }
+        return { success: true, message: '確認メールを送信しました。メールをご確認ください。' };
+      } else {
+        return { success: true, message: 'ユーザー登録が完了しました。ログインしてください。' };
       }
-
-      return { success: true, message: '確認メールを送信しました。メールをご確認ください。' };
     } catch (error) {
       console.error('Registration error details:', {
         error: error,
@@ -264,4 +271,54 @@ export const verifyEmail = async (token: string): Promise<{ success: boolean; me
     });
     return { success: false, message: `メール確認に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
+}; 
+
+// 認証メール再送信
+export const resendVerificationEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
+  return withPrisma(async (prisma) => {
+    try {
+      // ユーザー検索
+      const user = await prisma.user.findUnique({
+        where: { email }
+      });
+
+      if (!user) {
+        return { success: false, message: 'このメールアドレスで登録されたユーザーが見つかりません。' };
+      }
+
+      // 既にメール確認済みの場合
+      if (user.emailVerified) {
+        return { success: false, message: 'このメールアドレスは既に確認済みです。' };
+      }
+
+      // メール設定が不完全な場合
+      if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+        return { success: false, message: 'メール送信機能が現在利用できません。管理者にお問い合わせください。' };
+      }
+
+      // 新しい検証トークン生成
+      const newVerificationToken = generateVerificationToken();
+
+      // ユーザーの検証トークンを更新
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verificationToken: newVerificationToken,
+          updatedAt: new Date()
+        }
+      });
+
+      // 確認メール再送信
+      try {
+        await sendVerificationEmail(email, newVerificationToken);
+        return { success: true, message: '確認メールを再送信しました。メールをご確認ください。' };
+      } catch (emailError) {
+        console.error('Email resend error:', emailError);
+        return { success: false, message: 'メールの再送信に失敗しました。しばらく時間をおいて再度お試しください。' };
+      }
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      return { success: false, message: 'メール再送信に失敗しました。' };
+    }
+  });
 }; 

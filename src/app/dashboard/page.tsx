@@ -1,6 +1,6 @@
 "use client";
 import { useAuth } from "@/hooks/useAuth";
-import { PageTransition, LoadingSpinner } from '@/components';
+import { PageTransition, Button, LoadingSpinner } from '@/components';
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -36,6 +36,19 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      setShouldRedirect(true);
+    }
+  }, [user, loading]);
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.replace('/auth/login');
+    }
+  }, [shouldRedirect, router]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -65,10 +78,7 @@ export default function DashboardPage() {
   };
 
   if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
-  if (!user) {
-    router.replace('/auth');
-    return <LoadingSpinner size="lg" className="min-h-screen" />;
-  }
+  if (shouldRedirect) return <LoadingSpinner size="lg" className="min-h-screen" />;
   if (apiLoading) return <LoadingSpinner size="lg" className="min-h-screen" />;
   if (apiError) return <div className="p-8 text-red-500">{apiError}</div>;
 
@@ -77,7 +87,6 @@ export default function DashboardPage() {
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const thisMonthStats = analytics?.monthlyStats?.[ym];
   const recentNotes = analytics?.recentMatches?.slice(0, 3) || [];
-
 
   return (
     <PageTransition>
@@ -192,24 +201,9 @@ export default function DashboardPage() {
           <div className="mb-6">
             <h2 className="text-lg font-bold mb-3 text-gray-900">クイックアクション</h2>
             <div className="space-y-3">
-              <button
-                onClick={() => router.push("/notes/new")}
-                className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                ノート投稿
-              </button>
-              <button
-                onClick={() => router.push("/notes")}
-                className="w-full bg-purple-600 text-white py-4 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-              >
-                みんなのノート
-              </button>
-              <button
-                onClick={() => router.push("/analytics")}
-                className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-              >
-                成績分析
-              </button>
+              <Button fullWidth color="blue" size="lg" onClick={() => router.push("/notes/new")}>ノート投稿</Button>
+              <Button fullWidth color="purple" size="lg" onClick={() => router.push("/notes")}>みんなのノート</Button>
+              <Button fullWidth color="green" size="lg" onClick={() => router.push("/analytics")}>成績分析</Button>
             </div>
           </div>
 

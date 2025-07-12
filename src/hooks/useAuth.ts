@@ -96,6 +96,11 @@ export const useAuth = () => {
           error: null
         });
         
+        // 認証状態の変更を確実にするため、少し待ってからユーザー情報を再取得
+        setTimeout(() => {
+          fetchUser();
+        }, 100);
+        
         return { success: true, message: data.message };
       } else {
         return { success: false, message: data.message };

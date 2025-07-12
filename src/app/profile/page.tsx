@@ -1,54 +1,45 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { PageTransition, LoadingSpinner, Button } from '@/components';
 import { useRouter } from "next/navigation";
-import { User } from "@/types/database";
-import { PageTransition, AnimatedButton, LoadingSpinner } from '@/components';
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<User | null>(null);
-  const [nickname, setNickname] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const { user, loading } = useAuth();
   const router = useRouter();
+  const [nickname, setNickname] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
-    fetchUserData();
-  }, []);
-
-  const fetchUserData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/user/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!res.ok) {
-        router.replace('/auth');
-        return;
-      }
-      const json = await res.json();
-      setUser(json.user);
-      setProfile(json.profile);
-      setNickname(json.profile?.nickname || '');
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    } finally {
-      setLoading(false);
+    if (!loading && !user) {
+      setShouldRedirect(true);
     }
-  };
+  }, [user, loading]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setSubmitting(true);
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.replace('/auth');
+    }
+  }, [shouldRedirect, router]);
+
+  useEffect(() => {
+    if (user) {
+      setNickname(user.nickname || '');
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError(null);
     setMessage(null);
+
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/user/profile', {
+      const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -56,100 +47,163 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({ nickname })
       });
-      if (!res.ok) throw new Error('プロフィール更新APIエラー');
-      setMessage('プロフィールを更新しました。');
-      fetchUserData();
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage('プロフィールを更新しました');
+        setIsEditing(false);
+      } else {
+        setError(data.message || '更新に失敗しました');
+      }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      setMessage('プロフィールの更新に失敗しました。');
+      setError('更新に失敗しました');
     } finally {
-      setSubmitting(false);
+      setIsSaving(false);
     }
   };
 
   if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
-  if (!user) return null;
+  if (shouldRedirect) return <LoadingSpinner size="lg" className="min-h-screen" />;
 
   return (
     <PageTransition>
-      <main className="max-w-2xl mx-auto p-8">
-        <motion.h1 
-          className="text-2xl font-bold mb-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          プロフィール編集
-        </motion.h1>
-        
-        <motion.div 
-          className="mb-6 p-4 bg-gray-50 rounded-lg"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <div className="mb-2">
-            <span className="font-bold">メールアドレス:</span> {user.email}
+      <main className="min-h-screen bg-gray-100">
+        {/* ヘッダー */}
+        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+          <div className="px-4 py-3">
+            <div className="flex items-center">
+              <button
+                onClick={() => router.back()}
+                className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h1 className="text-lg font-bold text-gray-900 ml-2">プロフィール</h1>
+            </div>
           </div>
-          <div className="mb-2">
-            <span className="font-bold">ユーザーID:</span> {user.id}
-          </div>
-          <div>
-                            <span className="font-bold">登録日:</span> {new Date(user.createdAt).toLocaleDateString('ja-JP')}
-          </div>
-        </motion.div>
+        </div>
 
-        <motion.form 
-          onSubmit={handleSubmit} 
-          className="space-y-4"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <div>
-            <label htmlFor="nickname" className="block text-sm font-medium mb-2">
-              ニックネーム
-            </label>
-            <input
-              type="text"
-              id="nickname"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              className="w-full border rounded px-3 py-2"
-              placeholder="ニックネームを入力"
-              maxLength={50}
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              ノート投稿時に表示される名前です。空欄の場合は「匿名」と表示されます。
-            </p>
-          </div>
+        {/* メインコンテンツ */}
+        <div className="px-4 py-6">
+          <div className="max-w-md mx-auto">
+            {/* プロフィール情報 */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200 mb-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">プロフィール情報</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    メールアドレス
+                  </label>
+                  <input
+                    type="email"
+                    value={user?.email || ''}
+                    disabled
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base bg-gray-50 text-gray-500"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">メールアドレスは変更できません</p>
+                </div>
 
-          {message && (
-            <motion.div 
-              className={`p-3 rounded ${message.includes('失敗') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              {message}
-            </motion.div>
-          )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ニックネーム
+                  </label>
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={nickname}
+                        onChange={(e) => setNickname(e.target.value)}
+                        placeholder="ニックネームを入力"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          color="blue"
+                          size="md"
+                          onClick={handleSave}
+                          disabled={isSaving}
+                        >
+                          {isSaving ? '保存中...' : '保存'}
+                        </Button>
+                        <Button
+                          color="gray"
+                          size="md"
+                          onClick={() => {
+                            setIsEditing(false);
+                            setNickname(user?.nickname || '');
+                            setError(null);
+                          }}
+                          disabled={isSaving}
+                        >
+                          キャンセル
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-900">{nickname || '未設定'}</span>
+                      <Button
+                        color="blue"
+                        size="sm"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        編集
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-          <div className="flex gap-4 pt-4">
-            <AnimatedButton
-              type="submit"
-              disabled={submitting}
-            >
-              {submitting ? <LoadingSpinner size="sm" /> : '更新'}
-            </AnimatedButton>
-            <AnimatedButton
-              type="button"
-              onClick={() => router.back()}
-            >
-              戻る
-            </AnimatedButton>
+              {/* メッセージ */}
+              {message && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-600 text-sm">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    {message}
+                  </div>
+                </div>
+              )}
+
+              {/* エラーメッセージ */}
+              {error && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {error}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* アカウント情報 */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">アカウント情報</h2>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">登録日</span>
+                  <span className="text-sm text-gray-900">
+                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('ja-JP') : '不明'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">メール確認</span>
+                  <span className={`text-sm ${user?.emailVerified ? 'text-green-600' : 'text-red-600'}`}>
+                    {user?.emailVerified ? '完了' : '未完了'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        </motion.form>
+        </div>
       </main>
     </PageTransition>
   );

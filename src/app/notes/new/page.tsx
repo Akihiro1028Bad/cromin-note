@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { NoteType, Result } from "@/types/database";
-import { PageTransition, LoadingSpinner, ScoreInput } from '@/components';
+import { PageTransition, LoadingSpinner, ScoreInput, Button } from '@/components';
 
 // スコアセット型
 interface ScoreSet {
@@ -125,13 +125,14 @@ export default function NewNotePage() {
                 </button>
                 <h1 className="text-lg font-bold text-gray-900 ml-2">ノート投稿</h1>
               </div>
-              <button
-                onClick={handleSubmit}
+              <Button
+                color="blue"
+                size="md"
+                onClick={() => handleSubmit(new Event('submit') as any)}
                 disabled={submitting || !typeId}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? '投稿中...' : '投稿'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

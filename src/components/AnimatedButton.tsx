@@ -36,9 +36,7 @@ export default function AnimatedButton({
       disabled={disabled}
       className={`${colorClass} transition-colors duration-200 ${sizeClasses[size]} ${className}`}
     >
-      <span className="text-white font-bold" style={{color: '#fff', fontWeight: 'bold'}}>
-        {children}
-      </span>
+      {children}
     </button>
   );
 } 
