@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { NoteType, Result, Note } from "@/types/database";
 import { PageTransition, LoadingSpinner, ScoreInput, Button } from '@/components';
+import { useAuth } from "@/hooks/useAuth";
 
 interface ScoreSet {
   setNumber: number;
@@ -11,6 +12,7 @@ interface ScoreSet {
 }
 
 export default function EditNotePage() {
+  const { user } = useAuth();
   const [noteTypes, setNoteTypes] = useState<NoteType[]>([]);
   const [results, setResults] = useState<Result[]>([]);
   const [note, setNote] = useState<Note | null>(null);
@@ -176,7 +178,7 @@ export default function EditNotePage() {
 
       if (responseData.success) {
         console.log('Note updated successfully');
-        router.push(`/notes/${noteId}`);
+        router.replace(`/notes/${noteId}`);
       } else {
         throw new Error(responseData.message || 'ノートの更新に失敗しました');
       }
@@ -192,6 +194,41 @@ export default function EditNotePage() {
 
   if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
   if (!note) return <div className="p-8">ノートが見つかりません。</div>;
+  
+  // 権限チェック: 自分のノートでない場合はアクセス拒否
+  if (!user || note.userId !== user.id) {
+    return (
+      <PageTransition>
+        <main className="min-h-screen bg-bg-primary">
+          <div className="px-4 py-8">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🚫</div>
+              <h1 className="text-xl font-bold text-text-primary mb-4">アクセス拒否</h1>
+              <p className="text-text-secondary mb-6">このノートを編集する権限がありません。</p>
+              <div className="space-y-3">
+                <Button 
+                  fullWidth 
+                  color="blue" 
+                  size="lg" 
+                  onClick={() => router.back()}
+                >
+                  戻る
+                </Button>
+                <Button 
+                  fullWidth 
+                  color="gray" 
+                  size="md" 
+                  onClick={() => router.push("/home")}
+                >
+                  ホームに戻る
+                </Button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>
@@ -202,9 +239,9 @@ export default function EditNotePage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => router.push(`/notes/${noteId}`)}
+                  onClick={() => router.back()}
                   className="p-2 text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-gray-100"
-                  title="詳細に戻る"
+                  title="戻る"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -218,7 +255,7 @@ export default function EditNotePage() {
                 <Button
                   color="gray"
                   size="md"
-                  onClick={() => router.push(`/notes/${noteId}`)}
+                  onClick={() => router.back()}
                 >
                   キャンセル
                 </Button>

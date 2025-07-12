@@ -37,10 +37,10 @@ export default function LoginPage() {
 
       if (result.success) {
         setMessage(result.message);
-        // ログイン成功時はダッシュボードにリダイレクト
+        // ログイン成功時はホームページにリダイレクト
         setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
+          router.replace('/home');
+        }, 1000);
       } else {
         setError(result.message);
         // メール未確認エラーの場合は再送信フォームを表示

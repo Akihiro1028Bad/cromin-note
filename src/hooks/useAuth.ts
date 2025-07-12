@@ -101,6 +101,9 @@ export const useAuth = () => {
           error: null
         });
         
+        // 認証状態の更新を確実にするため、少し待機
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         return { success: true, message: data.message };
       } else {
         return { success: false, message: data.message };

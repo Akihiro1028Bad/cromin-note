@@ -4,8 +4,10 @@ import { useParams, useRouter } from "next/navigation";
 import { NoteWithRelations } from "@/types/database";
 import { PageTransition, LoadingSpinner, Button } from '@/components';
 import { parseScoreData, formatScoreDisplay, getMatchResult } from "@/lib/scoreUtils";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function NoteDetailPage() {
+  const { user } = useAuth();
   const [note, setNote] = useState<NoteWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,11 +116,11 @@ export default function NoteDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 {/* 自分のノートの場合のみ編集ボタンを表示 */}
-                {note.userId && (
+                {user && note.userId === user.id && (
                   <Button
                     color="blue"
                     size="md"
-                    onClick={() => router.push(`/notes/${note.id}/edit`)}
+                    onClick={() => router.replace(`/notes/${note.id}/edit`)}
                   >
                     編集
                   </Button>

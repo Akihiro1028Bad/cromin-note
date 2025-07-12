@@ -53,7 +53,7 @@ export default function HomePage() {
     if (!loading && user) {
       fetchData();
     }
-  }, [user, loading]);
+  }, [user, loading, router]);
 
   // URLパラメータからタブの状態を取得
   useEffect(() => {
@@ -106,8 +106,25 @@ export default function HomePage() {
     }
   };
 
-  if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
-  if (apiLoading) return <LoadingSpinner size="lg" className="min-h-screen" />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return null; // リダイレクト中
+  }
+  
+  if (apiLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   const recentNotes = notes.slice(0, 3);
 
