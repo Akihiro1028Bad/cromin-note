@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { NoteType, Result, Note } from "@/types/database";
-import { PageTransition, LoadingSpinner, ScoreInput } from '@/components';
+import { PageTransition, LoadingSpinner, ScoreInput, Breadcrumb, useBreadcrumb } from '@/components';
 
 interface ScoreSet {
   setNumber: number;
@@ -19,6 +19,7 @@ export default function EditNotePage() {
   const router = useRouter();
   const params = useParams();
   const noteId = params.id as string;
+  const breadcrumbItems = useBreadcrumb();
 
   // フォーム状態
   const [typeId, setTypeId] = useState<number | ''>('');
@@ -153,7 +154,7 @@ export default function EditNotePage() {
 
       if (responseData.success) {
         console.log('Note updated successfully');
-        router.push('/mypage');
+        router.push(`/notes/${noteId}`);
       } else {
         throw new Error(responseData.message || 'ノートの更新に失敗しました');
       }
@@ -176,25 +177,41 @@ export default function EditNotePage() {
         {/* スティッキーヘッダー */}
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
           <div className="px-4 py-3">
+            {/* パンくずナビゲーション */}
+            <div className="mb-2">
+              <Breadcrumb items={breadcrumbItems} />
+            </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => router.back()}
+                  onClick={() => router.push(`/notes/${noteId}`)}
                   className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  title="詳細に戻る"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <h1 className="text-lg font-bold text-gray-900 ml-2">ノート編集</h1>
+                <div>
+                  <h1 className="text-lg font-bold text-gray-900">ノート編集</h1>
+                  <p className="text-xs text-gray-500">ID: {noteId}</p>
+                </div>
               </div>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || !typeId}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? '更新中...' : '更新'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.push('/mypage')}
+                  className="px-3 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting || !typeId}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? '更新中...' : '更新'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

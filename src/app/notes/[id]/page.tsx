@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { NoteWithRelations } from "@/types/database";
-import { PageTransition, LoadingSpinner } from '@/components';
+import { PageTransition, LoadingSpinner, Breadcrumb, useBreadcrumb } from '@/components';
 import { parseScoreData, formatScoreDisplay, getMatchResult } from "@/lib/scoreUtils";
 
 export default function NoteDetailPage() {
@@ -12,6 +12,7 @@ export default function NoteDetailPage() {
   const params = useParams();
   const router = useRouter();
   const noteId = params.id as string;
+  const breadcrumbItems = useBreadcrumb();
 
   useEffect(() => {
     if (noteId) {
@@ -90,27 +91,48 @@ export default function NoteDetailPage() {
         {/* スティッキーヘッダー */}
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
           <div className="px-4 py-3">
+            {/* パンくずナビゲーション */}
+            <div className="mb-2">
+              <Breadcrumb items={breadcrumbItems} />
+            </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => router.back()}
                   className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  title="戻る"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <h1 className="text-lg font-bold text-gray-900 ml-2">ノート詳細</h1>
+                <div>
+                  <h1 className="text-lg font-bold text-gray-900">ノート詳細</h1>
+                  <p className="text-xs text-gray-500">
+                    {note.noteType?.name || '不明'} • {new Date(note.createdAt).toLocaleDateString('ja-JP')}
+                  </p>
+                </div>
               </div>
-              {/* 自分のノートの場合のみ編集ボタンを表示 */}
-              {note.userId && (
+              <div className="flex items-center gap-2">
+                {/* 自分のノートの場合のみ編集ボタンを表示 */}
+                {note.userId && (
+                  <button
+                    onClick={() => router.push(`/notes/${note.id}/edit`)}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    編集
+                  </button>
+                )}
                 <button
-                  onClick={() => router.push(`/notes/${note.id}/edit`)}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => router.push('/notes')}
+                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  title="ノート一覧"
                 >
-                  編集
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
                 </button>
-              )}
+              </div>
             </div>
           </div>
         </div>
