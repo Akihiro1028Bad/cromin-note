@@ -133,25 +133,8 @@ export default function AnalyticsPage() {
   return (
     <PageTransition>
       <main className="min-h-screen bg-gray-100 pb-20">
-        {/* スティッキーヘッダー */}
+                {/* タブナビゲーション */}
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <button
-                  onClick={() => router.push("/home")}
-                  className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <h1 className="text-lg font-bold text-gray-900 ml-2">成績分析</h1>
-              </div>
-            </div>
-          </div>
-
-          {/* タブナビゲーション */}
           <div className="px-4 pb-3">
             <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
               {[

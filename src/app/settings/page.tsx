@@ -33,23 +33,8 @@ export default function SettingsPage() {
   return (
     <PageTransition>
       <main className="min-h-screen bg-gray-100 pb-20">
-        {/* ヘッダー */}
+                {/* タブナビゲーション */}
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900">設定</h1>
-              <button
-                onClick={() => router.push("/home")}
-                className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* タブナビゲーション */}
           <div className="px-4 pb-3">
             <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
               {[
