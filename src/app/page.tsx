@@ -9,7 +9,7 @@ export default function Home() {
   const router = useRouter();
   const [shouldRedirect, setShouldRedirect] = useState(false);
 
-  // ログイン済みならダッシュボードへリダイレクト
+  // ログイン済みならホームページへリダイレクト
   useEffect(() => {
     if (!loading && user) {
       setShouldRedirect(true);
@@ -18,7 +18,7 @@ export default function Home() {
 
   useEffect(() => {
     if (shouldRedirect) {
-      router.replace("/dashboard");
+      router.replace("/home");
     }
   }, [shouldRedirect, router]);
 
