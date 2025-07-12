@@ -4,6 +4,7 @@ import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import { prisma } from './prisma';
 import { withPrisma } from './prismaRetry';
+import { logger } from './logger';
 const JWT_SECRET = 'your-super-secret-jwt-key-change-this-in-production';
 // 動的にAPP_URLを取得する関数
 const getAppUrl = (): string => {
@@ -171,6 +172,8 @@ export const registerUser = async (email: string, password: string): Promise<{ s
 // ユーザーログイン
 export const loginUser = async (email: string, password: string): Promise<{ success: boolean; user?: any; token?: string; message: string }> => {
   return withPrisma(async (prisma) => {
+    const startTime = Date.now();
+    
     try {
       // ユーザー取得
       const user = await prisma.user.findUnique({
@@ -178,26 +181,68 @@ export const loginUser = async (email: string, password: string): Promise<{ succ
       });
 
       if (!user) {
+        logger.logError({
+          error: new Error('User not found'),
+          context: {
+            endpoint: 'loginUser',
+            method: 'findUnique'
+          },
+          additionalInfo: {
+            email,
+            userFound: false
+          }
+        });
         return { success: false, message: 'メールアドレスまたはパスワードが正しくありません。' };
       }
 
       // メール確認チェック
       if (!user.emailVerified) {
+        logger.logError({
+          error: new Error('Email not verified'),
+          context: {
+            endpoint: 'loginUser',
+            method: 'emailVerification'
+          },
+          additionalInfo: {
+            email,
+            userId: user.id,
+            emailVerified: user.emailVerified
+          }
+        });
         return { success: false, message: 'メールアドレスの確認が完了していません。確認メールをご確認ください。' };
       }
 
       // パスワード検証
       const isValidPassword = await verifyPassword(password, user.passwordHash);
       if (!isValidPassword) {
+        logger.logError({
+          error: new Error('Invalid password'),
+          context: {
+            endpoint: 'loginUser',
+            method: 'passwordVerification'
+          },
+          additionalInfo: {
+            email,
+            userId: user.id,
+            passwordValid: false
+          }
+        });
         return { success: false, message: 'メールアドレスまたはパスワードが正しくありません。' };
       }
 
       // JWTトークン生成
       const token = generateToken(user.id);
+      
+      const duration = Date.now() - startTime;
+      logger.logDatabaseOperation('loginUser', duration, {
+        endpoint: 'loginUser',
+        success: true,
+        userId: user.id
+      });
 
       return { 
         success: true, 
-        user: { 
+        user: {
           id: user.id,
           email: user.email,
           nickname: user.nickname,
