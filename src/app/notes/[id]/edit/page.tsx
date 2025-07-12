@@ -107,32 +107,59 @@ export default function EditNotePage() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        alert('認証トークンが見つかりません。再度ログインしてください。');
+        router.push('/auth/login');
+        return;
+      }
+
+      const requestBody = {
+        typeId,
+        title,
+        opponent,
+        content,
+        resultId,
+        memo,
+        condition,
+        isPublic,
+        scoreData: JSON.stringify(scoreData),
+        totalSets,
+        wonSets: scoreData.filter(set => set.myScore > set.opponentScore).length,
+        matchDuration
+      };
+
+      console.log('Updating note with data:', requestBody);
+
       const res = await fetch(`/api/notes/${noteId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          typeId,
-          title,
-          opponent,
-          content,
-          resultId,
-          memo,
-          condition,
-          isPublic,
-          scoreData: JSON.stringify(scoreData),
-          totalSets,
-          wonSets: scoreData.filter(set => set.myScore > set.opponentScore).length,
-          matchDuration
-        })
+        body: JSON.stringify(requestBody)
       });
-      if (!res.ok) throw new Error('ノート更新APIエラー');
-      router.push('/mypage');
+
+      const responseData = await res.json();
+      
+      console.log('Update response:', {
+        status: res.status,
+        success: responseData.success,
+        message: responseData.message
+      });
+
+      if (!res.ok) {
+        throw new Error(responseData.message || 'ノート更新APIエラー');
+      }
+
+      if (responseData.success) {
+        console.log('Note updated successfully');
+        router.push('/mypage');
+      } else {
+        throw new Error(responseData.message || 'ノートの更新に失敗しました');
+      }
     } catch (error) {
       console.error('Error updating note:', error);
-      alert('ノートの更新に失敗しました。');
+      alert(`ノートの更新に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }

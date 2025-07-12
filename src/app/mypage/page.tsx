@@ -58,16 +58,49 @@ export default function MyPage() {
     setApiError(null);
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setApiError("認証トークンが見つかりません");
+        return;
+      }
+
       const res = await fetch("/api/notes/my", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
       const json = await res.json();
-      if (json.success) {
-        setNotes(json.data);
+      
+      // レスポンスの詳細をログ出力
+      console.log('API Response:', {
+        status: res.status,
+        success: json.success,
+        hasData: !!json.data,
+        dataLength: json.data?.length,
+        error: json.error,
+        details: json.details
+      });
+
+      if (json.success && json.data) {
+        // データ構造を変換
+        const transformedNotes = json.data.map((note: any) => ({
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          noteType: note.noteType?.name || '不明',
+          result: note.result?.name || null,
+          opponent: note.opponent,
+          isPublic: note.isPublic,
+          createdAt: note.createdAt,
+          updatedAt: note.updatedAt
+        }));
+        
+        console.log('Transformed notes:', transformedNotes);
+        setNotes(transformedNotes);
       } else {
+        console.error('API Error:', json.error, json.details);
         setApiError(json.error || "データ取得に失敗しました");
       }
-    } catch {
+    } catch (error) {
+      console.error('Fetch error:', error);
       setApiError("データ取得に失敗しました");
     } finally {
       setApiLoading(false);
