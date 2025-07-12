@@ -14,13 +14,13 @@ export default function Home() {
     if (!loading && user) {
       setShouldRedirect(true);
     }
-  }, [user, loading, router]);
+  }, [user, loading]); // routerを依存関係から削除
 
   useEffect(() => {
     if (shouldRedirect) {
       router.replace("/home");
     }
-  }, [shouldRedirect, router]);
+  }, [shouldRedirect]); // routerを依存関係から削除
 
   // ローディング中は何も表示しない
   if (loading) {

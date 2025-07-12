@@ -20,7 +20,7 @@ export default function SettingsPage() {
     if (shouldRedirect) {
       router.replace("/auth/login");
     }
-  }, [shouldRedirect, router]);
+  }, [shouldRedirect]); // routerを依存関係から削除
 
   const handleLogout = async () => {
     await logout();

@@ -24,11 +24,13 @@ export const useAuth = () => {
 
   // ユーザー情報取得
   const fetchUser = async () => {
+    console.log('fetchUser - function called');
     try {
       const token = localStorage.getItem('token');
       console.log('fetchUser - token:', token ? 'exists' : 'not found');
       
       if (!token) {
+        console.log('fetchUser - no token, setting null state');
         setAuthState({
           user: null,
           loading: false,
@@ -37,6 +39,7 @@ export const useAuth = () => {
         return;
       }
 
+      console.log('fetchUser - making API call');
       const response = await fetch('/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -46,12 +49,14 @@ export const useAuth = () => {
       console.log('fetchUser - response:', data);
 
       if (data.success) {
+        console.log('fetchUser - success, setting user state');
         setAuthState({
           user: data.user,
           loading: false,
           error: null
         });
       } else {
+        console.log('fetchUser - failed, removing token and setting null state');
         // トークンが無効な場合は削除
         localStorage.removeItem('token');
         setAuthState({
@@ -138,8 +143,9 @@ export const useAuth = () => {
   // 初期化時にユーザー情報を取得
   useEffect(() => {
     console.log('useAuth - useEffect triggered');
+    console.log('useAuth - current authState:', authState);
     fetchUser();
-  }, []);
+  }, []); // 空の依存関係配列で一度だけ実行
 
   // トークン変更時の監視
   useEffect(() => {
