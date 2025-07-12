@@ -19,6 +19,64 @@ class Logger {
   private isProduction = process.env.NODE_ENV === 'production';
   private isVercel = !!process.env.VERCEL;
 
+  // 情報ログ
+  info(message: string, context?: LogContext): void {
+    const logInfo = {
+      type: 'INFO',
+      timestamp: new Date().toISOString(),
+      message,
+      environment: process.env.NODE_ENV || 'development',
+      isVercel: this.isVercel,
+      ...context
+    };
+
+    if (this.isVercel) {
+      console.log('ℹ️ INFO:', JSON.stringify(logInfo, null, 2));
+    } else {
+      console.log('ℹ️ INFO:', logInfo);
+    }
+  }
+
+  // 警告ログ
+  warn(message: string, context?: LogContext): void {
+    const logInfo = {
+      type: 'WARN',
+      timestamp: new Date().toISOString(),
+      message,
+      environment: process.env.NODE_ENV || 'development',
+      isVercel: this.isVercel,
+      ...context
+    };
+
+    if (this.isVercel) {
+      console.warn('⚠️ WARN:', JSON.stringify(logInfo, null, 2));
+    } else {
+      console.warn('⚠️ WARN:', logInfo);
+    }
+  }
+
+  // エラーログ（簡易版）
+  error(message: string, error?: any, context?: LogContext): void {
+    if (error) {
+      this.logError({ error, context, additionalInfo: { message } });
+    } else {
+      const logInfo = {
+        type: 'ERROR',
+        timestamp: new Date().toISOString(),
+        message,
+        environment: process.env.NODE_ENV || 'development',
+        isVercel: this.isVercel,
+        ...context
+      };
+
+      if (this.isVercel) {
+        console.error('🚨 ERROR:', JSON.stringify(logInfo, null, 2));
+      } else {
+        console.error('🚨 ERROR:', logInfo);
+      }
+    }
+  }
+
   // エラーログ（Vercel環境で詳細情報を出力）
   logError(details: ErrorDetails): void {
     const {

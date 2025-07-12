@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { NoteType, Result } from "@/types/database";
-import { PageTransition, LoadingSpinner, ScoreInput, Button } from '@/components';
+import { PageTransition, LoadingSpinner, ScoreInput, Button, OpponentSelect, CategorySelect } from '@/components';
 
 // スコアセット型
 interface ScoreSet {
@@ -24,6 +24,8 @@ export default function NewNotePage() {
   const [opponent, setOpponent] = useState('');
   const [content, setContent] = useState('');
   const [resultId, setResultId] = useState<number | ''>('');
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
   const [memo, setMemo] = useState('');
   const [condition, setCondition] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -47,8 +49,13 @@ export default function NewNotePage() {
       if (!typesRes.ok || !resultsRes.ok) throw new Error('マスタデータ取得APIエラー');
       const typesJson = await typesRes.json();
       const resultsJson = await resultsRes.json();
-      setNoteTypes(typesJson.types || []);
+      
+      console.log('Types API response:', typesJson);
+      console.log('Results API response:', resultsJson);
+      
+      setNoteTypes(typesJson.noteTypes || []);
       setResults(resultsJson.results || []);
+      setCategories(typesJson.categories || []);
     } catch (error) {
       console.error('Error fetching master data:', error);
     } finally {
@@ -66,8 +73,12 @@ export default function NewNotePage() {
         alert('スコアを入力してください。');
         return;
       }
-      if (!opponent.trim()) {
+      if (!isValidOpponent(opponent, selectedType.name)) {
         alert('対戦相手を入力してください。');
+        return;
+      }
+      if (!categoryId) {
+        alert('カテゴリを選択してください。');
         return;
       }
     }
@@ -88,6 +99,7 @@ export default function NewNotePage() {
           opponent,
           content,
           resultId,
+          categoryId,
           memo,
           condition,
           isPublic,
@@ -116,6 +128,15 @@ export default function NewNotePage() {
   };
 
   const selectedType = noteTypes.find(t => t.id === typeId);
+  const selectedCategory = categories.find(c => c.id === categoryId);
+
+  // デバッグ用ログ
+  console.log('Current noteTypes:', noteTypes);
+  console.log('Current typeId:', typeId);
+  console.log('Selected type:', selectedType);
+  console.log('Current categories:', categories);
+  console.log('Current categoryId:', categoryId);
+  console.log('Selected category:', selectedCategory);
 
   // スコアデータが有効かどうかを判定する関数
   const isValidScoreData = (scores: ScoreSet[]): boolean => {
@@ -123,6 +144,19 @@ export default function NewNotePage() {
     
     // 全てのセットで0-0以外のスコアが入力されているかチェック
     return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
+  };
+
+  // 対戦相手が有効かどうかを判定する関数
+  const isValidOpponent = (opponent: string, noteType: string): boolean => {
+    if (!opponent.trim()) return false;
+    
+    const isDoubles = noteType === 'ダブルス' || noteType === 'ミックスダブルス';
+    if (isDoubles) {
+      const opponents = opponent.split(',').map(o => o.trim()).filter(o => o);
+      return opponents.length >= 2;
+    }
+    
+    return true;
   };
 
   if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
@@ -170,6 +204,9 @@ export default function NewNotePage() {
                   </option>
                 ))}
               </select>
+              {noteTypes.length === 0 && (
+                <p className="mt-1 text-sm text-red-600">種別データが読み込まれていません</p>
+              )}
             </div>
 
             {/* タイトル */}
@@ -189,23 +226,23 @@ export default function NewNotePage() {
               />
             </div>
 
+            {/* カテゴリ選択（ゲーム練習・公式試合のみ・必須） */}
+            {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
+              <CategorySelect
+                value={categoryId}
+                onChange={setCategoryId}
+                required={true}
+              />
+            )}
+
             {/* 対戦相手（ゲーム練習・公式試合のみ・必須） */}
             {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  対戦相手 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={opponent}
-                  onChange={(e) => setOpponent(e.target.value)}
-                  placeholder="対戦相手を入力"
-                  className={`w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    !opponent.trim() ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                  required
-                />
-              </div>
+              <OpponentSelect
+                value={opponent}
+                onChange={setOpponent}
+                category={selectedCategory?.name || ''}
+                isRequired={true}
+              />
             )}
 
             {/* スコア入力（ゲーム練習・公式試合のみ・必須） */}
@@ -300,14 +337,15 @@ export default function NewNotePage() {
                   <span>
                     {(() => {
                       const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
-                      const total = isGameOrMatch ? 4 : 2;
+                      const total = isGameOrMatch ? 5 : 2;
                       
                       // 種別に応じて実際に必要な項目のみを配列に含める
                       const requiredItems = isGameOrMatch 
                         ? [
                             typeId,
                             title.trim(),
-                            opponent.trim(),
+                            categoryId,
+                            isValidOpponent(opponent, selectedType?.name || ''),
                             isValidScoreData(scoreData)
                           ]
                         : [
@@ -326,14 +364,15 @@ export default function NewNotePage() {
                     style={{
                       width: `${(() => {
                         const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
-                        const total = isGameOrMatch ? 4 : 2;
+                        const total = isGameOrMatch ? 5 : 2;
                         
                         // 種別に応じて実際に必要な項目のみを配列に含める
                         const requiredItems = isGameOrMatch 
                           ? [
                               typeId,
                               title.trim(),
-                              opponent.trim(),
+                              categoryId,
+                              isValidOpponent(opponent, selectedType?.name || ''),
                               isValidScoreData(scoreData)
                             ]
                           : [
@@ -356,7 +395,7 @@ export default function NewNotePage() {
               size="lg"
               onClick={() => handleSubmit(new Event('submit') as any)}
               disabled={submitting || !typeId || !title.trim() || 
-                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !opponent.trim()))}
+                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponent, selectedType.name) || !categoryId))}
               className="w-full"
             >
               {submitting ? '投稿中...' : '投稿'}

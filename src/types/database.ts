@@ -17,6 +17,26 @@ export interface Result {
   createdAt: string
 }
 
+export interface Category {
+  id: number
+  name: string
+  createdAt: string
+}
+
+export interface Opponent {
+  id: string
+  name: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NoteOpponent {
+  id: string
+  noteId: string
+  opponentId: string
+  createdAt: string
+}
+
 export interface ScoreSet {
   id: string
   noteId: string
@@ -33,6 +53,7 @@ export interface Note {
   opponent: string | null
   content: string | null
   resultId: number | null
+  categoryId: number | null
   memo: string | null
   condition: string | null
   isPublic: boolean
@@ -47,5 +68,7 @@ export interface NoteWithRelations extends Note {
   user: User
   noteType: NoteType
   result: Result | null
+  category: Category | null
   scoreSets: ScoreSet[]
+  noteOpponents: (NoteOpponent & { opponent: Opponent })[]
 } 

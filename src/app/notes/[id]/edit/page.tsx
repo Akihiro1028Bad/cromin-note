@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { NoteType, Result, Note } from "@/types/database";
-import { PageTransition, LoadingSpinner, ScoreInput, Button } from '@/components';
+import { PageTransition, LoadingSpinner, ScoreInput, Button, OpponentSelect, CategorySelect } from '@/components';
 import { useAuth } from "@/hooks/useAuth";
 
 interface ScoreSet {
@@ -13,21 +13,25 @@ interface ScoreSet {
 
 export default function EditNotePage() {
   const { user } = useAuth();
-  const [noteTypes, setNoteTypes] = useState<NoteType[]>([]);
-  const [results, setResults] = useState<Result[]>([]);
-  const [note, setNote] = useState<Note | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
   const params = useParams();
   const noteId = params.id as string;
 
+  // 状態管理
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [note, setNote] = useState<Note | null>(null);
+  const [noteTypes, setNoteTypes] = useState<NoteType[]>([]);
+  const [results, setResults] = useState<Result[]>([]);
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
+
   // フォーム状態
-  const [typeId, setTypeId] = useState<number | ''>('');
+  const [typeId, setTypeId] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [opponent, setOpponent] = useState('');
   const [content, setContent] = useState('');
-  const [resultId, setResultId] = useState<number | ''>('');
+  const [resultId, setResultId] = useState<number | null>(null);
+  const [categoryId, setCategoryId] = useState<number | null>(null);
   const [memo, setMemo] = useState('');
   const [condition, setCondition] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -37,86 +41,134 @@ export default function EditNotePage() {
   const [totalSets, setTotalSets] = useState(0);
   const [matchDuration, setMatchDuration] = useState(0);
 
+  // データ取得
   useEffect(() => {
-    fetchData();
-  }, [noteId]);
+    if (!noteId) return;
 
-  // スコアデータが変更された場合のデバッグログ
-  useEffect(() => {
-    console.log('スコアデータが更新されました:', scoreData);
-    console.log('ScoreInputに渡すprops:', {
-      scoreData,
-      totalSets,
-      matchDuration,
-      scoreDataLength: scoreData.length
-    });
-  }, [scoreData, totalSets, matchDuration]);
-
-  const fetchData = async () => {
-    try {
-      const [typesRes, resultsRes, noteRes] = await Promise.all([
-        fetch('/api/notes/types'),
-        fetch('/api/notes/results'),
-        fetch(`/api/notes/${noteId}`)
-      ]);
-      if (!typesRes.ok || !resultsRes.ok || !noteRes.ok) throw new Error('データ取得APIエラー');
-      const typesJson = await typesRes.json();
-      const resultsJson = await resultsRes.json();
-      const noteJson = await noteRes.json();
-      setNoteTypes(typesJson.types || []);
-      setResults(resultsJson.results || []);
-      const noteData = noteJson.note;
-      setNote(noteData);
-      setTypeId(noteData.typeId);
-      setTitle(noteData.title || '');
-      setOpponent(noteData.opponent || '');
-      setContent(noteData.content || '');
-      setResultId(noteData.resultId || '');
-      setMemo(noteData.memo || '');
-      setCondition(noteData.condition || '');
-      setIsPublic(noteData.isPublic);
-      
-      // スコアデータの復元
-      console.log('ノートデータ全体:', noteData);
-      console.log('scoreDataフィールド:', noteData.scoreData);
-      console.log('totalSetsフィールド:', noteData.totalSets);
-      console.log('matchDurationフィールド:', noteData.matchDuration);
-      
-      if (noteData.scoreData) {
-        try {
-          const parsedScoreData = JSON.parse(noteData.scoreData);
-          console.log('復元されたスコアデータ:', parsedScoreData);
-          setScoreData(parsedScoreData);
-          // セット数を正しく設定（保存されたセット数またはスコアデータの長さ）
-          const savedTotalSets = noteData.totalSets || parsedScoreData.length;
-          console.log('設定するセット数:', savedTotalSets);
-          setTotalSets(savedTotalSets);
-        } catch (e) {
-          console.error('スコアデータの解析に失敗:', e);
+    const fetchData = async () => {
+      try {
+        const [typesRes, resultsRes, noteRes] = await Promise.all([
+          fetch('/api/notes/types'),
+          fetch('/api/notes/results'),
+          fetch(`/api/notes/${noteId}`)
+        ]);
+        
+        if (!typesRes.ok || !resultsRes.ok || !noteRes.ok) {
+          throw new Error('データ取得APIエラー');
+        }
+        
+        const typesJson = await typesRes.json();
+        const resultsJson = await resultsRes.json();
+        const noteJson = await noteRes.json();
+        
+        // マスターデータ設定
+        setNoteTypes(typesJson.noteTypes || []);
+        setResults(resultsJson.results || []);
+        setCategories(typesJson.categories || []);
+        
+        // ノートデータ設定
+        const noteData = noteJson.note;
+        setNote(noteData);
+        setTypeId(noteData.typeId);
+        setTitle(noteData.title || '');
+        setOpponent(noteData.opponent || '');
+        setContent(noteData.content || '');
+        setResultId(noteData.resultId);
+        setCategoryId(noteData.categoryId);
+        setMemo(noteData.memo || '');
+        setCondition(noteData.condition || '');
+        setIsPublic(noteData.isPublic);
+        
+        // スコアデータ復元
+        if (noteData.scoreData) {
+          try {
+            const parsedScoreData = JSON.parse(noteData.scoreData);
+            setScoreData(parsedScoreData);
+            setTotalSets(noteData.totalSets || parsedScoreData.length);
+          } catch (e) {
+            console.error('スコアデータの解析に失敗:', e);
+            setScoreData([]);
+            setTotalSets(0);
+          }
+        } else {
           setScoreData([]);
           setTotalSets(0);
         }
-      } else {
-        console.log('scoreDataフィールドが存在しないため、空のスコアデータを設定します');
-        setScoreData([]);
-        setTotalSets(0);
+        
+        // 試合時間復元
+        setMatchDuration(noteData.matchDuration || 0);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        alert('ノートの取得に失敗しました。');
+        router.push('/notes');
+      } finally {
+        setLoading(false);
       }
-      
-      // 試合時間の復元
-      if (noteData.matchDuration) {
-        setMatchDuration(noteData.matchDuration);
-      } else {
-        setMatchDuration(0);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      alert('ノートの取得に失敗しました。');
-      router.push('/notes');
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    fetchData();
+  }, [noteId, router]);
+
+  // バリデーション関数
+  const isValidScoreData = (scores: ScoreSet[]): boolean => {
+    if (scores.length === 0) return false;
+    return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
   };
 
+  const isValidOpponent = (opponent: string, category: string): boolean => {
+    if (!opponent.trim()) return false;
+    
+    const isDoubles = category === 'ダブルス' || category === 'ミックスダブルス';
+    if (isDoubles) {
+      const opponents = opponent.split(',').map(o => o.trim()).filter(o => o);
+      return opponents.length >= 2;
+    }
+    
+    return true;
+  };
+
+  // 選択された種別とカテゴリをメモ化
+  const selectedType = useMemo(
+    () => noteTypes.find(t => t.id === typeId),
+    [noteTypes, typeId]
+  );
+
+  const selectedCategory = useMemo(
+    () => categories.find(c => c.id === categoryId),
+    [categories, categoryId]
+  );
+
+  // 進捗計算をメモ化
+  const progressData = useMemo(() => {
+    const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
+    const total = isGameOrMatch ? 5 : 2;
+    
+    const requiredItems = isGameOrMatch 
+      ? [
+          typeId,
+          title.trim(),
+          categoryId,
+          isValidOpponent(opponent, selectedCategory?.name || ''),
+          isValidScoreData(scoreData)
+        ]
+      : [
+          typeId,
+          title.trim()
+        ];
+    
+    const completed = requiredItems.filter(Boolean).length;
+    return { completed, total, percentage: (completed / total) * 100 };
+  }, [
+    selectedType?.name,
+    title,
+    typeId,
+    categoryId,
+    opponent,
+    scoreData,
+    selectedCategory?.name
+  ]);
+
+  // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!typeId || !note || !title.trim()) return;
@@ -127,11 +179,16 @@ export default function EditNotePage() {
         alert('スコアを入力してください。');
         return;
       }
-      if (!opponent.trim()) {
+      if (!isValidOpponent(opponent, selectedCategory?.name || '')) {
         alert('対戦相手を入力してください。');
         return;
       }
+      if (!categoryId) {
+        alert('カテゴリを選択してください。');
+        return;
+      }
     }
+
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
@@ -147,6 +204,7 @@ export default function EditNotePage() {
         opponent,
         content,
         resultId,
+        categoryId,
         memo,
         condition,
         isPublic,
@@ -155,8 +213,6 @@ export default function EditNotePage() {
         wonSets: scoreData.filter(set => set.myScore > set.opponentScore).length,
         matchDuration
       };
-
-      console.log('Updating note with data:', requestBody);
 
       const res = await fetch(`/api/notes/${noteId}`, {
         method: 'PUT',
@@ -168,19 +224,12 @@ export default function EditNotePage() {
       });
 
       const responseData = await res.json();
-      
-      console.log('Update response:', {
-        status: res.status,
-        success: responseData.success,
-        message: responseData.message
-      });
 
       if (!res.ok) {
         throw new Error(responseData.message || 'ノート更新APIエラー');
       }
 
       if (responseData.success) {
-        console.log('Note updated successfully');
         router.replace(`/notes/${noteId}`);
       } else {
         throw new Error(responseData.message || 'ノートの更新に失敗しました');
@@ -193,20 +242,10 @@ export default function EditNotePage() {
     }
   };
 
-  const selectedType = noteTypes.find(t => t.id === typeId);
-
-  // スコアデータが有効かどうかを判定する関数
-  const isValidScoreData = (scores: ScoreSet[]): boolean => {
-    if (scores.length === 0) return false;
-    
-    // 全てのセットで0-0以外のスコアが入力されているかチェック
-    return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
-  };
-
   if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
   if (!note) return <div className="p-8">ノートが見つかりません。</div>;
   
-  // 権限チェック: 自分のノートでない場合はアクセス拒否
+  // 権限チェック
   if (!user || note.userId !== user.id) {
     return (
       <PageTransition>
@@ -273,8 +312,8 @@ export default function EditNotePage() {
                 種別 <span className="text-danger">*</span>
               </label>
               <select
-                value={typeId}
-                onChange={(e) => setTypeId(Number(e.target.value))}
+                value={typeId || ''}
+                onChange={(e) => setTypeId(Number(e.target.value) || null)}
                 className={`w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200 ${
                   !typeId ? 'border-red-300 bg-red-50' : 'border-border-color'
                 }`}
@@ -306,23 +345,23 @@ export default function EditNotePage() {
               />
             </div>
 
+            {/* カテゴリ選択（ゲーム練習・公式試合のみ・必須） */}
+            {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
+              <CategorySelect
+                value={categoryId}
+                onChange={setCategoryId}
+                required={true}
+              />
+            )}
+
             {/* 対戦相手（ゲーム練習・公式試合のみ・必須） */}
             {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  対戦相手 <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={opponent}
-                  onChange={(e) => setOpponent(e.target.value)}
-                  placeholder="対戦相手を入力"
-                  className={`w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200 ${
-                    !opponent.trim() ? 'border-red-300 bg-red-50' : 'border-border-color'
-                  }`}
-                  required
-                />
-              </div>
+              <OpponentSelect
+                value={opponent}
+                onChange={setOpponent}
+                category={selectedCategory?.name || ''}
+                isRequired={true}
+              />
             )}
 
             {/* スコア入力（ゲーム練習・公式試合のみ・必須） */}
@@ -414,54 +453,12 @@ export default function EditNotePage() {
               <div className="mb-3">
                 <div className="flex justify-between text-xs text-gray-500 mb-1">
                   <span>必須項目</span>
-                  <span>
-                    {(() => {
-                      const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
-                      const total = isGameOrMatch ? 4 : 2;
-                      
-                      // 種別に応じて実際に必要な項目のみを配列に含める
-                      const requiredItems = isGameOrMatch 
-                        ? [
-                            typeId,
-                            title.trim(),
-                            opponent.trim(),
-                            isValidScoreData(scoreData)
-                          ]
-                        : [
-                            typeId,
-                            title.trim()
-                          ];
-                      
-                      const completed = requiredItems.filter(Boolean).length;
-                      return `${completed}/${total}`;
-                    })()}
-                  </span>
+                  <span>{progressData.completed}/{progressData.total}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${(() => {
-                        const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
-                        const total = isGameOrMatch ? 4 : 2;
-                        
-                        // 種別に応じて実際に必要な項目のみを配列に含める
-                        const requiredItems = isGameOrMatch 
-                          ? [
-                              typeId,
-                              title.trim(),
-                              opponent.trim(),
-                              isValidScoreData(scoreData)
-                            ]
-                          : [
-                              typeId,
-                              title.trim()
-                            ];
-                        
-                        const completed = requiredItems.filter(Boolean).length;
-                        return (completed / total) * 100;
-                      })()}%`
-                    }}
+                    style={{ width: `${progressData.percentage}%` }}
                   ></div>
                 </div>
               </div>
@@ -473,7 +470,7 @@ export default function EditNotePage() {
               size="lg"
               onClick={() => handleSubmit(new Event('submit') as any)}
               disabled={submitting || !typeId || !title.trim() || 
-                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !opponent.trim()))}
+                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponent, selectedCategory?.name || '') || !categoryId))}
               className="w-full"
             >
               {submitting ? '更新中...' : '更新'}
