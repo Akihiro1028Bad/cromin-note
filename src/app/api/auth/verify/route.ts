@@ -6,8 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Email verification API called');
+    console.log('=== Email Verification API Called ===');
     console.log('Request URL:', request.url);
+    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
     console.log('Environment check:', {
       NODE_ENV: process.env.NODE_ENV,
       VERCEL: process.env.VERCEL,
@@ -17,7 +18,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
     console.log('Token received:', token ? `exists (length: ${token.length})` : 'not found');
+    console.log('Token preview:', token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'none');
     console.log('All search params:', Object.fromEntries(searchParams.entries()));
+    console.log('=====================================');
 
     if (!token) {
       console.log('No token provided');
@@ -45,6 +48,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(errorUrl);
     }
   } catch (error) {
+    console.error('=== Email Verification API Error ===');
     console.error('Email verification API error details:', {
       error: error,
       message: error instanceof Error ? error.message : 'Unknown error',
@@ -57,13 +61,16 @@ export async function GET(request: NextRequest) {
         error.message.includes('connection') || 
         error.message.includes('timeout') ||
         error.message.includes('ECONNREFUSED')
-      )
+      ),
+      isDatasourceError: error instanceof Error && error.message.includes('datasource'),
+      isUrlError: error instanceof Error && error.message.includes('URL')
     });
     
     // エラー時はエラーページにリダイレクト
     const errorMessage = error instanceof Error ? error.message : 'サーバーエラーが発生しました。';
     const errorUrl = new URL(`/auth/error?message=${encodeURIComponent(errorMessage)}`, request.url);
     console.log('Error redirect URL:', errorUrl.toString());
+    console.error('=====================================');
     return NextResponse.redirect(errorUrl);
   }
 } 

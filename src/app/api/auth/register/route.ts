@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ユーザー登録
-    const result = await registerUser(email, password);
+    const result = await registerUser(email, password, request);
 
     if (result.success) {
       return NextResponse.json(

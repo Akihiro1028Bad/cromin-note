@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 認証メール再送信
-    const result = await resendVerificationEmail(email);
+    const result = await resendVerificationEmail(email, request);
 
     if (result.success) {
       return NextResponse.json(
