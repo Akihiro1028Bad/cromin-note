@@ -6,7 +6,7 @@ interface ButtonProps {
   onClick?: () => void;
   type?: "button" | "submit" | "reset";
   size?: "sm" | "md" | "lg";
-  color?: "blue" | "green" | "purple" | "red" | "gray";
+  color?: "blue" | "green" | "purple" | "red" | "gray" | "white" | "transparent";
   disabled?: boolean;
   className?: string;
   fullWidth?: boolean;
@@ -29,7 +29,9 @@ export default function Button({
     green: "bg-success text-white hover:bg-green-700 focus:ring-success/50 shadow-sm hover:shadow-md hover:-translate-y-0.5",
     purple: "bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500/50 shadow-sm hover:shadow-md hover:-translate-y-0.5",
     red: "bg-danger text-white hover:bg-red-700 focus:ring-danger/50 shadow-sm hover:shadow-md hover:-translate-y-0.5",
-    gray: "bg-secondary text-text-primary hover:bg-gray-700 hover:text-white focus:ring-secondary/50 shadow-sm hover:shadow-md hover:-translate-y-0.5"
+    gray: "bg-secondary text-text-primary hover:bg-gray-700 hover:text-white focus:ring-secondary/50 shadow-sm hover:shadow-md hover:-translate-y-0.5",
+    white: "bg-white text-gray-900 hover:bg-gray-100 focus:ring-gray-500/50 shadow-sm hover:shadow-md hover:-translate-y-0.5",
+    transparent: "bg-transparent text-white border-2 border-white hover:bg-white hover:text-gray-900 focus:ring-white/50 shadow-sm hover:shadow-md hover:-translate-y-0.5"
   };
 
   const sizeClasses = {
