@@ -1,12 +1,16 @@
 "use client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function AuthHeader() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -17,7 +21,39 @@ export default function AuthHeader() {
 
   const handleNavigation = (path: string) => {
     router.push(path);
-    setIsMenuOpen(false);
+    setIsMobileMenuOpen(false);
+  };
+
+  // メニュー外クリックでメニューを閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // メニュー切り替え時の自動閉じる機能
+  const handleMobileMenuToggle = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+    if (isAccountMenuOpen) {
+      setIsAccountMenuOpen(false);
+    }
+  };
+
+  const handleAccountMenuToggle = () => {
+    setIsAccountMenuOpen(!isAccountMenuOpen);
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
   };
 
   return (
@@ -76,9 +112,9 @@ export default function AuthHeader() {
             </button>
 
             {/* ユーザーアバター */}
-            <div className="relative">
+            <div className="relative" ref={accountMenuRef}>
               <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                onClick={handleAccountMenuToggle}
                 className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -92,7 +128,7 @@ export default function AuthHeader() {
               </button>
 
               {/* ドロップダウンメニュー */}
-              {isMenuOpen && (
+              {isAccountMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-30">
                   <div className="px-4 py-2 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">{user.nickname || 'ユーザー'}</p>
@@ -102,7 +138,7 @@ export default function AuthHeader() {
                   <button
                     onClick={() => {
                       router.push("/settings");
-                      setIsMenuOpen(false);
+                      setIsAccountMenuOpen(false);
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
@@ -112,7 +148,7 @@ export default function AuthHeader() {
                   <button
                     onClick={() => {
                       handleLogout();
-                      setIsMenuOpen(false);
+                      setIsAccountMenuOpen(false);
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                   >
@@ -124,7 +160,7 @@ export default function AuthHeader() {
 
             {/* モバイルメニューボタン */}
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={handleMobileMenuToggle}
               className="md:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,8 +171,8 @@ export default function AuthHeader() {
         </div>
 
         {/* モバイルナビゲーション */}
-        {isMenuOpen && (
-          <div className="md:hidden mt-3 pt-3 border-t border-gray-200">
+        {isMobileMenuOpen && (
+          <div className="md:hidden mt-3 pt-3 border-t border-gray-200" ref={mobileMenuRef}>
             <nav className="space-y-1">
               {/* メインナビゲーション */}
               <div className="mb-4">
@@ -198,7 +234,7 @@ export default function AuthHeader() {
                 <button
                   onClick={() => {
                     handleLogout();
-                    setIsMenuOpen(false);
+                    setIsMobileMenuOpen(false);
                   }}
                   className="w-full text-left px-3 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-3"
                 >
