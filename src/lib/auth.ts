@@ -71,12 +71,21 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// メール送信設定の確認
+console.log('Email configuration check:', {
+  GMAIL_USER: process.env.GMAIL_USER ? 'set' : 'not set',
+  GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD ? 'set' : 'not set',
+  NODE_ENV: process.env.NODE_ENV
+});
+
 // 確認メール送信
 export const sendVerificationEmail = async (email: string, token: string): Promise<void> => {
   // メール設定が不完全な場合はスキップ
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.warn('Email configuration incomplete, skipping email send');
-    return;
+    console.log('GMAIL_USER:', process.env.GMAIL_USER ? 'set' : 'not set');
+    console.log('GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'set' : 'not set');
+    throw new Error('メール送信設定が不完全です。');
   }
 
   const appUrl = getAppUrl();
@@ -109,7 +118,26 @@ export const sendVerificationEmail = async (email: string, token: string): Promi
     `
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    console.log('Attempting to send verification email to:', email);
+    console.log('Mail options:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      verificationUrl: verificationUrl
+    });
+    
+    await transporter.sendMail(mailOptions);
+    console.log('Verification email sent successfully to:', email);
+  } catch (error) {
+    console.error('Email sending failed:', {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      code: (error as any)?.code,
+      response: (error as any)?.response
+    });
+    throw error;
+  }
 };
 
 // ユーザー登録
@@ -148,12 +176,15 @@ export const registerUser = async (email: string, password: string): Promise<{ s
       if (!emailVerified) {
         try {
           await sendVerificationEmail(email, verificationToken);
+          return { success: true, message: '確認メールを送信しました。メールをご確認ください。' };
         } catch (emailError) {
           console.error('Email sending error:', emailError);
-          // メール送信に失敗してもユーザー登録は成功とする
-          return { success: true, message: 'ユーザー登録は完了しましたが、確認メールの送信に失敗しました。' };
+          // メール送信に失敗した場合はユーザーを削除してエラーを返す
+          await prisma.user.delete({
+            where: { id: (await prisma.user.findUnique({ where: { email } }))?.id }
+          });
+          return { success: false, message: 'メール送信に失敗しました。しばらく時間をおいて再度お試しください。' };
         }
-        return { success: true, message: '確認メールを送信しました。メールをご確認ください。' };
       } else {
         return { success: true, message: 'ユーザー登録が完了しました。ログインしてください。' };
       }

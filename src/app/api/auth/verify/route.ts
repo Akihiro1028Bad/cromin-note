@@ -7,20 +7,22 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     console.log('Email verification API called');
+    console.log('Request URL:', request.url);
+    
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
-    console.log('Token received:', token ? 'exists' : 'not found');
+    console.log('Token received:', token ? `exists (length: ${token.length})` : 'not found');
+    console.log('All search params:', Object.fromEntries(searchParams.entries()));
 
     if (!token) {
       console.log('No token provided');
-      return NextResponse.json(
-        { success: false, message: '確認トークンがありません。' },
-        { status: 400 }
-      );
+      const errorUrl = new URL('/auth/error?message=確認トークンがありません。', request.url);
+      console.log('Error redirect URL:', errorUrl.toString());
+      return NextResponse.redirect(errorUrl);
     }
 
     // メール確認
-    console.log('Calling verifyEmail function');
+    console.log('Calling verifyEmail function with token');
     const result = await verifyEmail(token);
     console.log('verifyEmail result:', result);
 
@@ -45,14 +47,10 @@ export async function GET(request: NextRequest) {
       code: (error as any)?.code
     });
     
-    // エラー時はJSONレスポンスを返す（リダイレクトではなく）
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: 'サーバーエラーが発生しました。',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    // エラー時はエラーページにリダイレクト
+    const errorMessage = error instanceof Error ? error.message : 'サーバーエラーが発生しました。';
+    const errorUrl = new URL(`/auth/error?message=${encodeURIComponent(errorMessage)}`, request.url);
+    console.log('Error redirect URL:', errorUrl.toString());
+    return NextResponse.redirect(errorUrl);
   }
 } 

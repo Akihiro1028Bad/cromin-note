@@ -1,7 +1,7 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PageTransition, LoadingSpinner, Button } from '@/components';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -14,7 +14,16 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [showResendForm, setShowResendForm] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
+
+  // URLパラメータの処理
+  useEffect(() => {
+    const verified = searchParams.get('verified');
+    if (verified === 'true') {
+      setMessage('メールアドレスの確認が完了しました。ログインしてください。');
+    }
+  }, [searchParams]);
 
   // ログイン処理
   const handleLogin = async (e: React.FormEvent) => {
