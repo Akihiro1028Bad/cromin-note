@@ -1,24 +1,23 @@
 "use client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
 export default function AuthHeader() {
+  // すべてのHooksを最初に呼び出す
   const { user, loading, error, logout } = useAuth();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
   
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
-  // 認証状態の初期化完了を検知
-  useEffect(() => {
-    if (!loading) {
-      setIsInitialized(true);
-    }
-  }, [loading]);
+
+
+
+
+
 
   const handleLogout = async () => {
     await logout();
@@ -33,23 +32,16 @@ export default function AuthHeader() {
   // メニュー外クリックでメニューを閉じる
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      console.log('Click outside detected, target:', event.target);
-      console.log('Mobile menu ref:', mobileMenuRef.current);
-      console.log('Account menu ref:', accountMenuRef.current);
-      
       // ハンバーガーメニューボタン自体のクリックは無視
       const target = event.target as Element;
       if (target.closest('button[aria-label*="メニュー"]') || target.closest('.mobile-menu-toggle')) {
-        console.log('Ignoring click on menu button');
         return;
       }
       
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
-        console.log('Closing mobile menu due to outside click');
         setIsMobileMenuOpen(false);
       }
       if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
-        console.log('Closing account menu due to outside click');
         setIsAccountMenuOpen(false);
       }
     };
@@ -60,50 +52,14 @@ export default function AuthHeader() {
     };
   }, []); // 空の依存関係配列で一度だけ実行
 
-  // モバイルメニューの状態変更をログ出力
-  useEffect(() => {
-    console.log('Mobile menu state changed to:', isMobileMenuOpen);
-    console.log('Mobile menu ref exists:', !!mobileMenuRef.current);
-  }, [isMobileMenuOpen]);
-
-  // ローディング中はスケルトン表示
-  if (!isInitialized || loading) {
-    return (
-      <header className="bg-bg-secondary border-b border-border-color shadow-sm sticky top-0 z-20">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            {/* ロゴ・タイトルのスケルトン */}
-            <div className="flex items-center">
-              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-
-            {/* デスクトップナビゲーションのスケルトン */}
-            <nav className="hidden md:flex items-center space-x-6">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
-              ))}
-            </nav>
-
-            {/* ユーザーメニューのスケルトン */}
-            <div className="flex items-center space-x-3">
-              <div className="hidden md:block h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
-              <div className="md:hidden h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-      </header>
-    );
+  // ローディング中または認証されていない場合はヘッダーを非表示
+  if (loading || !user) {
+    return null;
   }
-
-  // 認証状態が確定し、ユーザーがログインしていない場合は何も表示しない
-  if (!user) return null;
 
   // メニュー切り替え時の自動閉じる機能
   const handleMobileMenuToggle = () => {
-    console.log('Mobile menu toggle clicked, current state:', isMobileMenuOpen);
     const newState = !isMobileMenuOpen;
-    console.log('Setting new state to:', newState);
     setIsMobileMenuOpen(newState);
     if (isAccountMenuOpen) {
       setIsAccountMenuOpen(false);
@@ -186,7 +142,7 @@ export default function AuthHeader() {
               >
                 <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium text-primary">
-                    {user.nickname ? user.nickname.charAt(0).toUpperCase() : 'U'}
+                    {user?.nickname ? user.nickname.charAt(0).toUpperCase() : 'U'}
                   </span>
                 </div>
                 <svg className="w-4 h-4 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,8 +154,8 @@ export default function AuthHeader() {
               {isAccountMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-bg-secondary rounded-lg shadow-lg border border-border-color py-2 z-30">
                   <div className="px-4 py-2 border-b border-border-color">
-                    <p className="text-sm font-medium text-text-primary">{user.nickname || 'ユーザー'}</p>
-                    <p className="text-xs text-text-secondary">{user.email}</p>
+                    <p className="text-sm font-medium text-text-primary">{user?.nickname || 'ユーザー'}</p>
+                    <p className="text-xs text-text-secondary">{user?.email || '未ログイン'}</p>
                   </div>
                   
                   <button
@@ -308,8 +264,8 @@ export default function AuthHeader() {
               {/* アカウント */}
               <div className="border-t border-border-color pt-3 mt-3">
                 <div className="px-3 py-2 mb-2">
-                  <p className="text-sm font-medium text-text-primary">{user.nickname || 'ユーザー'}</p>
-                  <p className="text-xs text-text-secondary">{user.email}</p>
+                  <p className="text-sm font-medium text-text-primary">{user?.nickname || 'ユーザー'}</p>
+                  <p className="text-xs text-text-secondary">{user?.email || '未ログイン'}</p>
                 </div>
                 <button
                   onClick={() => {

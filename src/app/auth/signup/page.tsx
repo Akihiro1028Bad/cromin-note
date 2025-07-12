@@ -6,6 +6,7 @@ import { PageTransition, LoadingSpinner, Button } from '@/components';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
+  const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,8 +24,21 @@ export default function SignupPage() {
     setMessage(null);
 
     // 基本的なバリデーション
-    if (!email || !password || !confirmPassword) {
+    if (!email || !nickname || !password || !confirmPassword) {
       setError('すべての項目を入力してください。');
+      setLoading(false);
+      return;
+    }
+
+    // ニックネームのバリデーション
+    if (nickname.trim().length < 2) {
+      setError('ニックネームは2文字以上で入力してください。');
+      setLoading(false);
+      return;
+    }
+
+    if (nickname.trim().length > 20) {
+      setError('ニックネームは20文字以下で入力してください。');
       setLoading(false);
       return;
     }
@@ -57,7 +71,11 @@ export default function SignupPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email, 
+          nickname: nickname.trim(), 
+          password 
+        }),
       });
 
       const data = await response.json();
@@ -65,6 +83,7 @@ export default function SignupPage() {
       if (data.success) {
         setMessage(data.message);
         setEmail('');
+        setNickname('');
         setPassword('');
         setConfirmPassword('');
         
@@ -147,8 +166,27 @@ export default function SignupPage() {
             {/* フォーム */}
             <form onSubmit={handleSignUp} className="space-y-4">
               <div>
+                <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
+                  ニックネーム <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="nickname"
+                  placeholder="あなたのニックネーム"
+                  value={nickname}
+                  onChange={e => setNickname(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  minLength={2}
+                  maxLength={20}
+                  disabled={loading}
+                />
+                <p className="text-xs text-gray-500 mt-1">2文字以上20文字以下で入力してください</p>
+              </div>
+
+              <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  メールアドレス
+                  メールアドレス <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -164,7 +202,7 @@ export default function SignupPage() {
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  パスワード
+                  パスワード <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="password"
@@ -182,7 +220,7 @@ export default function SignupPage() {
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                  パスワード（確認）
+                  パスワード（確認） <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="password"

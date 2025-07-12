@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageTransition, LoadingSpinner, Button } from '@/components';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -37,10 +37,8 @@ export default function LoginPage() {
 
       if (result.success) {
         setMessage(result.message);
-        // ログイン成功時はホームページにリダイレクト
-        setTimeout(() => {
-          router.replace('/home');
-        }, 1000);
+        // ログイン成功時は即座にホームページにリダイレクト
+        router.replace('/home');
       } else {
         setError(result.message);
         // メール未確認エラーの場合は再送信フォームを表示

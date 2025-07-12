@@ -4,7 +4,7 @@ import { NoteWithRelations } from "@/types/database";
 import { PageTransition, Button, LoadingSpinner } from '@/components';
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function MyNotesPage() {
   const [notes, setNotes] = useState<NoteWithRelations[]>([]);

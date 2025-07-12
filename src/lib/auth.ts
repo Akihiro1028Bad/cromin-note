@@ -174,7 +174,7 @@ export const sendVerificationEmail = async (email: string, token: string, reques
 };
 
 // ユーザー登録
-export const registerUser = async (email: string, password: string, request?: Request): Promise<{ success: boolean; message: string }> => {
+export const registerUser = async (email: string, nickname: string, password: string, request?: Request): Promise<{ success: boolean; message: string }> => {
   return withPrisma(async (prisma) => {
     try {
       // 既存ユーザーチェック
@@ -199,6 +199,7 @@ export const registerUser = async (email: string, password: string, request?: Re
       await prisma.user.create({
         data: {
           email,
+          nickname,
           passwordHash,
           verificationToken: emailVerified ? null : verificationToken,
           emailVerified

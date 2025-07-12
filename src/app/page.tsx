@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { PageTransition, Button } from '@/components';
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

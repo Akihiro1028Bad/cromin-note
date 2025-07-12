@@ -1,15 +1,18 @@
 "use client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { PageTransition, Button, LoadingSpinner } from '@/components';
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, updateUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'profile' | 'account' | 'app'>('profile');
   const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [nickname, setNickname] = useState('');
+  const [updating, setUpdating] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -23,6 +26,13 @@ export default function SettingsPage() {
     }
   }, [shouldRedirect]); // routerを依存関係から削除
 
+  // ユーザー情報が読み込まれたらニックネームを設定
+  useEffect(() => {
+    if (user?.nickname) {
+      setNickname(user.nickname);
+    }
+  }, [user]);
+
   // URLパラメータからタブの状態を取得
   useEffect(() => {
     const tab = searchParams.get('tab') as 'profile' | 'account' | 'app';
@@ -34,6 +44,41 @@ export default function SettingsPage() {
   const handleLogout = async () => {
     await logout();
     router.push("/auth/login");
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+
+    setUpdating(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ nickname: nickname.trim() })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage({ type: 'success', text: data.message });
+        // ユーザー情報を更新
+        if (updateUser && data.user) {
+          updateUser(data.user);
+        }
+      } else {
+        setMessage({ type: 'error', text: data.message });
+      }
+    } catch (error) {
+      console.error('Profile update error:', error);
+      setMessage({ type: 'error', text: 'プロフィールの更新に失敗しました。' });
+    } finally {
+      setUpdating(false);
+    }
   };
 
   if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
@@ -77,10 +122,13 @@ export default function SettingsPage() {
                     </label>
                     <input
                       type="text"
-                      defaultValue={user?.nickname || ''}
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
                       placeholder="ニックネームを入力"
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      maxLength={20}
                     />
+                    <p className="text-xs text-gray-500 mt-1">2文字以上20文字以下で入力してください</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -88,14 +136,39 @@ export default function SettingsPage() {
                     </label>
                     <input
                       type="email"
-                      defaultValue={user?.email || ''}
+                      value={user?.email || ''}
                       disabled
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base bg-gray-50 text-gray-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">メールアドレスは変更できません</p>
                   </div>
-                  <Button fullWidth color="blue" size="md">
-                    <span className="text-white font-bold">プロフィールを更新</span>
+
+                  {/* メッセージ表示 */}
+                  {message && (
+                    <div className={`p-3 rounded-lg text-sm ${
+                      message.type === 'success' 
+                        ? 'bg-green-50 border border-green-200 text-green-600' 
+                        : 'bg-red-50 border border-red-200 text-red-600'
+                    }`}>
+                      {message.text}
+                    </div>
+                  )}
+
+                  <Button 
+                    fullWidth 
+                    color="blue" 
+                    size="md" 
+                    onClick={handleUpdateProfile}
+                    disabled={updating || !nickname.trim() || nickname.trim().length < 2}
+                  >
+                    {updating ? (
+                      <div className="flex items-center justify-center">
+                        <LoadingSpinner size="sm" />
+                        <span className="ml-2 text-white font-bold">更新中...</span>
+                      </div>
+                    ) : (
+                      <span className="text-white font-bold">プロフィールを更新</span>
+                    )}
                   </Button>
                 </div>
               </div>

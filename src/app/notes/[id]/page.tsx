@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { NoteWithRelations } from "@/types/database";
 import { PageTransition, LoadingSpinner, Button } from '@/components';
 import { parseScoreData, formatScoreDisplay, getMatchResult } from "@/lib/scoreUtils";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function NoteDetailPage() {
   const { user } = useAuth();

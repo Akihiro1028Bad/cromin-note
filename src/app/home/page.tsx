@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { PageTransition, Button, LoadingSpinner } from '@/components';
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -43,17 +43,31 @@ export default function HomePage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [apiLoading, setApiLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'stats'>('overview');
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
+  // 認証状態の監視とリダイレクト処理
   useEffect(() => {
+    console.log('HomePage - Auth state:', { user: user ? 'exists' : 'null', loading });
+    
     if (!loading && !user) {
-      router.replace('/auth/login');
+      console.log('HomePage - No user, redirecting to login');
+      setShouldRedirect(true);
       return;
     }
 
     if (!loading && user) {
+      console.log('HomePage - User authenticated, fetching data');
       fetchData();
     }
   }, [user, loading, router]);
+
+  // リダイレクト処理
+  useEffect(() => {
+    if (shouldRedirect) {
+      console.log('HomePage - Executing redirect to login');
+      router.replace('/auth/login');
+    }
+  }, [shouldRedirect, router]);
 
   // URLパラメータからタブの状態を取得
   useEffect(() => {
@@ -64,9 +78,17 @@ export default function HomePage() {
   }, [searchParams]);
 
   const fetchData = async () => {
+    console.log('HomePage - fetchData called');
     setApiLoading(true);
     try {
       const token = localStorage.getItem("token");
+      console.log('HomePage - token:', token ? 'exists' : 'not found');
+      
+      if (!token) {
+        console.log('HomePage - No token found, redirecting');
+        setShouldRedirect(true);
+        return;
+      }
       
       // 並行してデータを取得
       const [notesRes, analyticsRes] = await Promise.all([
@@ -80,6 +102,11 @@ export default function HomePage() {
 
       const notesJson = await notesRes.json();
       const analyticsJson = await analyticsRes.json();
+
+      console.log('HomePage - API responses:', { 
+        notes: notesJson.success, 
+        analytics: analyticsJson.success 
+      });
 
       if (notesJson.success) {
         const transformedNotes = notesJson.data.map((note: any) => ({
@@ -100,13 +127,15 @@ export default function HomePage() {
         setAnalytics(analyticsJson.data);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('HomePage - Error fetching data:', error);
     } finally {
       setApiLoading(false);
     }
   };
 
+  // ローディング状態の表示
   if (loading) {
+    console.log('HomePage - Showing loading spinner');
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -114,11 +143,19 @@ export default function HomePage() {
     );
   }
   
-  if (!user) {
-    return null; // リダイレクト中
+  // リダイレクト中
+  if (shouldRedirect || !user) {
+    console.log('HomePage - Redirecting or no user');
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
   
+  // APIデータ取得中
   if (apiLoading) {
+    console.log('HomePage - Showing API loading spinner');
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -126,6 +163,7 @@ export default function HomePage() {
     );
   }
 
+  console.log('HomePage - Rendering main content');
   const recentNotes = notes.slice(0, 3);
 
   return (
