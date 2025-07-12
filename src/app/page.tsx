@@ -36,7 +36,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-bold text-gray-900">Cromin Note</h1>
               {!loading && !user && (
-                <Button fullWidth color="blue" size="md" onClick={() => router.push("/auth")}>ログイン</Button>
+                <Button fullWidth color="blue" size="md" onClick={() => router.push("/auth/login")}>ログイン</Button>
               )}
             </div>
           </div>
@@ -60,13 +60,13 @@ export default function Home() {
           {/* クイックアクション */}
           {!loading && user ? (
             <div className="space-y-3 mb-8">
-              <Button fullWidth color="blue" size="lg" onClick={() => router.push("/dashboard")}>ダッシュボード</Button>
+              <Button fullWidth color="blue" size="lg" onClick={() => router.push("/home")}>ホーム</Button>
               <Button fullWidth color="green" size="lg" onClick={() => router.push("/notes/new")}>ノート投稿</Button>
               <Button fullWidth color="purple" size="lg" onClick={() => router.push("/notes")}>みんなのノート</Button>
             </div>
           ) : (
             <div className="space-y-3 mb-8">
-              <Button fullWidth color="blue" size="lg" onClick={() => router.push("/auth")}>無料で始める</Button>
+              <Button fullWidth color="blue" size="lg" onClick={() => router.push("/auth/signup")}>無料で始める</Button>
             </div>
           )}
 
