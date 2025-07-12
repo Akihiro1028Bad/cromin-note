@@ -22,9 +22,37 @@ export const useAuth = () => {
     error: null
   });
 
+  // ローカルストレージからユーザー情報を復元
+  const restoreUserFromStorage = () => {
+    try {
+      const cachedUser = localStorage.getItem('cachedUser');
+      if (cachedUser) {
+        const user = JSON.parse(cachedUser);
+        // キャッシュの有効期限をチェック（24時間）
+        const cachedAt = localStorage.getItem('userCachedAt');
+        if (cachedAt && Date.now() - parseInt(cachedAt) < 24 * 60 * 60 * 1000) {
+          return user;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore user from storage:', error);
+    }
+    return null;
+  };
+
+  // ユーザー情報をローカルストレージにキャッシュ
+  const cacheUser = (user: User) => {
+    try {
+      localStorage.setItem('cachedUser', JSON.stringify(user));
+      localStorage.setItem('userCachedAt', Date.now().toString());
+    } catch (error) {
+      console.error('Failed to cache user:', error);
+    }
+  };
+
   // ユーザー情報取得
-  const fetchUser = async () => {
-    console.log('fetchUser - function called');
+  const fetchUser = async (retryCount = 0) => {
+    console.log('fetchUser - function called, retry:', retryCount);
     try {
       const token = localStorage.getItem('token');
       console.log('fetchUser - token:', token ? 'exists' : 'not found');
@@ -50,8 +78,10 @@ export const useAuth = () => {
 
       if (data.success) {
         console.log('fetchUser - success, setting user state');
+        const user = data.user;
+        cacheUser(user);
         setAuthState({
-          user: data.user,
+          user: user,
           loading: false,
           error: null
         });
@@ -59,6 +89,8 @@ export const useAuth = () => {
         console.log('fetchUser - failed, removing token and setting null state');
         // トークンが無効な場合は削除
         localStorage.removeItem('token');
+        localStorage.removeItem('cachedUser');
+        localStorage.removeItem('userCachedAt');
         setAuthState({
           user: null,
           loading: false,
@@ -67,6 +99,16 @@ export const useAuth = () => {
       }
     } catch (error) {
       console.error('fetchUser error:', error);
+      
+      // リトライ機能（最大3回）
+      if (retryCount < 3) {
+        console.log(`fetchUser - retrying (${retryCount + 1}/3)`);
+        setTimeout(() => {
+          fetchUser(retryCount + 1);
+        }, 1000 * (retryCount + 1)); // 指数バックオフ
+        return;
+      }
+      
       setAuthState({
         user: null,
         loading: false,
@@ -94,15 +136,15 @@ export const useAuth = () => {
         localStorage.setItem('token', data.token);
         console.log('login - token saved to localStorage');
         
+        // ユーザー情報をキャッシュ
+        cacheUser(data.user);
+        
         // ログイン成功後にユーザー情報を即座に設定
         setAuthState({
           user: data.user,
           loading: false,
           error: null
         });
-        
-        // 認証状態の更新を確実にするため、少し待機
-        await new Promise(resolve => setTimeout(resolve, 100));
         
         return { success: true, message: data.message };
       } else {
@@ -128,8 +170,10 @@ export const useAuth = () => {
         });
       }
 
-      // トークンを削除
+      // トークンとキャッシュを削除
       localStorage.removeItem('token');
+      localStorage.removeItem('cachedUser');
+      localStorage.removeItem('userCachedAt');
 
       setAuthState({
         user: null,
@@ -147,6 +191,19 @@ export const useAuth = () => {
   useEffect(() => {
     console.log('useAuth - useEffect triggered');
     console.log('useAuth - current authState:', authState);
+    
+    // まずキャッシュから復元を試行
+    const cachedUser = restoreUserFromStorage();
+    if (cachedUser) {
+      console.log('useAuth - restoring from cache');
+      setAuthState({
+        user: cachedUser,
+        loading: false,
+        error: null
+      });
+    }
+    
+    // その後、APIで最新情報を取得
     fetchUser();
   }, []); // 空の依存関係配列で一度だけ実行
 

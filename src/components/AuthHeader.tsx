@@ -4,13 +4,21 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
 export default function AuthHeader() {
-  const { user, logout } = useAuth();
+  const { user, loading, error, logout } = useAuth();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  // 認証状態の初期化完了を検知
+  useEffect(() => {
+    if (!loading) {
+      setIsInitialized(true);
+    }
+  }, [loading]);
 
   const handleLogout = async () => {
     await logout();
@@ -58,7 +66,37 @@ export default function AuthHeader() {
     console.log('Mobile menu ref exists:', !!mobileMenuRef.current);
   }, [isMobileMenuOpen]);
 
-  // ユーザーがログインしていない場合は何も表示しない
+  // ローディング中はスケルトン表示
+  if (!isInitialized || loading) {
+    return (
+      <header className="bg-bg-secondary border-b border-border-color shadow-sm sticky top-0 z-20">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* ロゴ・タイトルのスケルトン */}
+            <div className="flex items-center">
+              <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+
+            {/* デスクトップナビゲーションのスケルトン */}
+            <nav className="hidden md:flex items-center space-x-6">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+              ))}
+            </nav>
+
+            {/* ユーザーメニューのスケルトン */}
+            <div className="flex items-center space-x-3">
+              <div className="hidden md:block h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+              <div className="md:hidden h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  // 認証状態が確定し、ユーザーがログインしていない場合は何も表示しない
   if (!user) return null;
 
   // メニュー切り替え時の自動閉じる機能
