@@ -209,15 +209,15 @@ export default function ScoreInput({
           {/* スコア入力 */}
           {totalSets > 0 && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-lg font-medium text-gray-700">
                   各セットのスコア
                 </label>
                 <button
                   type="button"
                   onClick={addSet}
                   disabled={scoreData.length >= totalSets}
-                  className="px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
                 >
                   セット追加
                 </button>
@@ -226,53 +226,61 @@ export default function ScoreInput({
               {scoreData.map((set, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
+                  className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm"
                 >
-                  <span className="text-sm font-bold text-blue-600 min-w-[60px]">
-                    {set.setNumber}セット
-                  </span>
-                  <div className="flex items-center gap-2 flex-1">
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      max="21"
-                      value={set.myScore}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const numValue = value === '' ? 0 : parseInt(value, 10);
-                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 21) {
-                          updateSetScore(index, 'myScore', numValue);
-                        }
-                      }}
-                      className="w-16 border border-gray-300 rounded-lg px-3 py-2 text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      placeholder="0"
-                    />
-                    <span className="text-blue-600 font-bold text-lg">-</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      max="21"
-                      value={set.opponentScore}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const numValue = value === '' ? 0 : parseInt(value, 10);
-                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 21) {
-                          updateSetScore(index, 'opponentScore', numValue);
-                        }
-                      }}
-                      className="w-16 border border-gray-300 rounded-lg px-3 py-2 text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      placeholder="0"
-                    />
+                  {/* セット番号と削除ボタン */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-lg font-bold text-blue-600">
+                      {set.setNumber}セット
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeSet(index)}
+                      className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      削除
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeSet(index)}
-                    className="text-red-600 hover:text-red-700 text-sm font-semibold transition-colors"
-                  >
-                    削除
-                  </button>
+                  
+                  {/* スコア入力エリア */}
+                  <div className="flex items-center justify-center gap-4">
+                    {/* 自分のスコア */}
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-center">自分のスコア</label>
+                      <select
+                        value={set.myScore}
+                        onChange={(e) => updateSetScore(index, 'myScore', Number(e.target.value))}
+                        className="w-full h-12 border-2 border-blue-200 rounded-lg px-4 text-center text-lg font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                      >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map((score) => (
+                          <option key={score} value={score}>
+                            {score}点
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* 区切り文字 */}
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-2xl font-bold text-gray-400">-</span>
+                    </div>
+                    
+                    {/* 相手のスコア */}
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-center">相手のスコア</label>
+                      <select
+                        value={set.opponentScore}
+                        onChange={(e) => updateSetScore(index, 'opponentScore', Number(e.target.value))}
+                        className="w-full h-12 border-2 border-red-200 rounded-lg px-4 text-center text-lg font-bold text-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-red-50"
+                      >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map((score) => (
+                          <option key={score} value={score}>
+                            {score}点
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
               ))}
 
