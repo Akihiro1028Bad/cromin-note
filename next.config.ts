@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // 開発環境でより詳細なエラーメッセージを表示
+  reactStrictMode: false,
   // Prismaクライアントを外部パッケージとして設定
   serverExternalPackages: ['@prisma/client'],
   // パスエイリアス設定

@@ -6,12 +6,27 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, nickname, password } = await request.json();
 
     // バリデーション
-    if (!email || !password) {
+    if (!email || !nickname || !password) {
       return NextResponse.json(
-        { success: false, message: 'メールアドレスとパスワードを入力してください。' },
+        { success: false, message: 'メールアドレス、ニックネーム、パスワードを入力してください。' },
+        { status: 400 }
+      );
+    }
+
+    // ニックネームのバリデーション
+    if (nickname.trim().length < 2) {
+      return NextResponse.json(
+        { success: false, message: 'ニックネームは2文字以上で入力してください。' },
+        { status: 400 }
+      );
+    }
+
+    if (nickname.trim().length > 20) {
+      return NextResponse.json(
+        { success: false, message: 'ニックネームは20文字以下で入力してください。' },
         { status: 400 }
       );
     }
@@ -33,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ユーザー登録
-    const result = await registerUser(email, password);
+    const result = await registerUser(email, nickname.trim(), password, request);
 
     if (result.success) {
       return NextResponse.json(

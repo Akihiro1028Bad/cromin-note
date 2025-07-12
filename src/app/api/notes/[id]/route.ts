@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -17,11 +18,20 @@ export async function GET(
       include: {
         noteType: true,
         result: true,
-        scoreSets: true,
+        scoreSets: {
+          orderBy: {
+            setNumber: 'asc'
+          }
+        },
         user: {
           select: {
             id: true,
             nickname: true
+          }
+        },
+        noteOpponents: {
+          include: {
+            opponent: true
           }
         }
       }
@@ -34,8 +44,21 @@ export async function GET(
       );
     }
 
+    // scoreSetsからscoreDataを生成
+    const scoreData = note.scoreSets.map((set: any) => ({
+      setNumber: set.setNumber,
+      myScore: set.myScore,
+      opponentScore: set.opponentScore
+    }));
+
+    // レスポンス用のノートオブジェクトを作成
+    const noteWithScoreData = {
+      ...note,
+      scoreData: JSON.stringify(scoreData)
+    };
+
     return NextResponse.json(
-      { success: true, note },
+      { success: true, note: noteWithScoreData },
       { status: 200 }
     );
   } catch (error) {
@@ -53,10 +76,28 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+  
+  // APIリクエストログ
+  logger.logApiRequest('PUT', `/api/notes/${id}`, {
+    requestId,
+    endpoint: `/api/notes/${id}`,
+    noteId: id
+  });
+
   try {
     // 認証チェック
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!token) {
+      logger.logError({
+        error: new Error('No authorization token provided'),
+        context: {
+          requestId,
+          endpoint: `/api/notes/${id}`,
+          method: 'PUT'
+        }
+      });
       return NextResponse.json(
         { success: false, message: '認証されていません。' },
         { status: 401 }
@@ -65,6 +106,18 @@ export async function PUT(
 
     const decoded = verifyToken(token);
     if (!decoded) {
+      logger.logError({
+        error: new Error('Invalid token'),
+        context: {
+          requestId,
+          endpoint: `/api/notes/${id}`,
+          method: 'PUT'
+        },
+        additionalInfo: {
+          hasToken: !!token,
+          tokenLength: token.length
+        }
+      });
       return NextResponse.json(
         { success: false, message: '無効なトークンです。' },
         { status: 401 }
@@ -77,6 +130,18 @@ export async function PUT(
     });
 
     if (!existingNote) {
+      logger.logError({
+        error: new Error('Note not found'),
+        context: {
+          requestId,
+          endpoint: `/api/notes/${id}`,
+          method: 'PUT'
+        },
+        additionalInfo: {
+          noteId: id,
+          userId: decoded.userId
+        }
+      });
       return NextResponse.json(
         { success: false, message: 'ノートが見つかりません。' },
         { status: 404 }
@@ -84,25 +149,39 @@ export async function PUT(
     }
 
     if (existingNote.userId !== decoded.userId) {
+      logger.logError({
+        error: new Error('Permission denied'),
+        context: {
+          requestId,
+          endpoint: `/api/notes/${id}`,
+          method: 'PUT'
+        },
+        additionalInfo: {
+          noteId: id,
+          noteUserId: existingNote.userId,
+          requestUserId: decoded.userId
+        }
+      });
       return NextResponse.json(
         { success: false, message: 'このノートを編集する権限がありません。' },
         { status: 403 }
       );
     }
 
-    const { 
+    const {
       typeId, 
       title, 
-      opponent, 
       content, 
       resultId, 
+      categoryId,
       memo, 
       condition, 
       isPublic,
       scoreData,
       totalSets,
       wonSets,
-      matchDuration
+      matchDuration,
+      opponentIds // 追加: 対戦相手ID配列
     } = await request.json();
 
     // スコアデータをパース
@@ -125,15 +204,20 @@ export async function PUT(
       where: { noteId: id }
     });
 
+    // 既存のnote_opponentsを削除
+    await prisma.noteOpponent.deleteMany({
+      where: { noteId: id }
+    });
+
     // ノート更新
     const note = await prisma.note.update({
       where: { id },
       data: {
         typeId: Number(typeId),
         title: title || null,
-        opponent: opponent || null,
         content: content || null,
         resultId: resultId ? Number(resultId) : null,
+        categoryId: categoryId ? Number(categoryId) : null,
         memo: memo || null,
         condition: condition || null,
         isPublic: isPublic || false,
@@ -150,12 +234,67 @@ export async function PUT(
       }
     });
 
+    // 対戦相手の紐付け（note_opponents中間テーブル）
+    if (Array.isArray(opponentIds) && opponentIds.length > 0) {
+      await prisma.noteOpponent.createMany({
+        data: opponentIds.map((opponentId: string) => ({
+          noteId: note.id,
+          opponentId
+        }))
+      });
+    }
+
+    // note_opponentsも含めて返す
+    const noteWithOpponents = await prisma.note.findUnique({
+      where: { id: note.id },
+      include: {
+        scoreSets: true,
+        noteOpponents: {
+          include: {
+            opponent: true
+          }
+        }
+      }
+    });
+
+    const duration = Date.now() - startTime;
+    // 成功ログ
+    logger.logDatabaseOperation('update_note', duration, {
+      requestId,
+      endpoint: `/api/notes/${id}`,
+      noteId: id,
+      userId: decoded.userId,
+      scoreSetsCount: scoreSets.length
+    });
+
     return NextResponse.json(
-      { success: true, note },
+      { success: true, note: noteWithOpponents },
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error updating note:', error);
+    const duration = Date.now() - startTime;
+    
+    // 詳細なエラーログ
+    logger.logError({
+      error,
+      context: {
+        requestId,
+        endpoint: `/api/notes/${id}`,
+        method: 'PUT',
+        duration: `${duration}ms`
+      },
+      additionalInfo: {
+        noteId: id,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        isPrismaError: error instanceof Error && error.message.includes('prisma'),
+        isConnectionError: error instanceof Error && (
+          error.message.includes('connection') || 
+          error.message.includes('timeout') ||
+          error.message.includes('ECONNREFUSED')
+        )
+      }
+    });
+    
     return NextResponse.json(
       { success: false, message: 'ノートの更新に失敗しました。' },
       { status: 500 }

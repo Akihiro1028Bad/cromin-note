@@ -41,6 +41,23 @@ async function main() {
   }
   console.log('Resultのマスターデータ挿入完了')
 
+  // Categoryのマスターデータ（シングルス、ダブルス、ミックスダブルス）
+  const categories = [
+    { name: 'シングルス' },
+    { name: 'ダブルス' },
+    { name: 'ミックスダブルス' }
+  ]
+
+  console.log('Categoryのマスターデータを挿入中...')
+  for (const category of categories) {
+    await prisma.category.upsert({
+      where: { name: category.name },
+      update: {},
+      create: category
+    })
+  }
+  console.log('Categoryのマスターデータ挿入完了')
+
   console.log('マスターデータの挿入が完了しました！')
   
   // 挿入されたデータの確認
@@ -48,6 +65,9 @@ async function main() {
     orderBy: { id: 'asc' }
   })
   const insertedResults = await prisma.result.findMany({
+    orderBy: { id: 'asc' }
+  })
+  const insertedCategories = await prisma.category.findMany({
     orderBy: { id: 'asc' }
   })
   
@@ -59,6 +79,11 @@ async function main() {
   console.log('\n=== 挿入されたResult ===')
   insertedResults.forEach((result: any) => {
     console.log(`ID: ${result.id}, Name: ${result.name}`)
+  })
+
+  console.log('\n=== 挿入されたCategory ===')
+  insertedCategories.forEach((category: any) => {
+    console.log(`ID: ${category.id}, Name: ${category.name}`)
   })
 }
 

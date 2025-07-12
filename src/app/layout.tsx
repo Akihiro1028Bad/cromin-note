@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthHeader } from '@/components';
+import AuthHeader from '@/components/AuthHeader';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,6 +20,15 @@ export const metadata: Metadata = {
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   themeColor: "#2563eb",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/next.svg", type: "image/svg+xml" }
+    ],
+    apple: [
+      { url: "/icon.svg", type: "image/svg+xml" }
+    ]
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -42,8 +52,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100`}
       >
-        <AuthHeader />
-        {children}
+        <AuthProvider>
+          <AuthHeader />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

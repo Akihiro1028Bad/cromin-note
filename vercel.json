@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install prisma@5.15.0 @prisma/client@5.15.0 tailwindcss@3.4.17 autoprefixer@10.4.21 typescript@5 @types/react@19 @types/react-dom@19 && prisma generate && next build",
+  "buildCommand": "rm -rf .next && npm run vercel-build",
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["hnd1"],
@@ -8,10 +8,7 @@
       "maxDuration": 30
     },
     "src/app/api/**/*.ts": {
-      "maxDuration": 60
+      "maxDuration": 30
     }
-  },
-  "env": {
-    "NODE_ENV": "production"
   }
 } 

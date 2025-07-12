@@ -1,16 +1,19 @@
 "use client";
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { PageTransition, LoadingSpinner } from '@/components';
+import { useRouter } from 'next/navigation';
+import { PageTransition, LoadingSpinner, Button } from '@/components';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
+  const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showResendForm, setShowResendForm] = useState(false);
   const router = useRouter();
 
   // メールサインアップ
@@ -21,8 +24,21 @@ export default function SignupPage() {
     setMessage(null);
 
     // 基本的なバリデーション
-    if (!email || !password || !confirmPassword) {
+    if (!email || !nickname || !password || !confirmPassword) {
       setError('すべての項目を入力してください。');
+      setLoading(false);
+      return;
+    }
+
+    // ニックネームのバリデーション
+    if (nickname.trim().length < 2) {
+      setError('ニックネームは2文字以上で入力してください。');
+      setLoading(false);
+      return;
+    }
+
+    if (nickname.trim().length > 20) {
+      setError('ニックネームは20文字以下で入力してください。');
       setLoading(false);
       return;
     }
@@ -55,7 +71,11 @@ export default function SignupPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email, 
+          nickname: nickname.trim(), 
+          password 
+        }),
       });
 
       const data = await response.json();
@@ -63,8 +83,14 @@ export default function SignupPage() {
       if (data.success) {
         setMessage(data.message);
         setEmail('');
+        setNickname('');
         setPassword('');
         setConfirmPassword('');
+        
+        // メール確認が必要な場合は再送信フォームを表示
+        if (data.message.includes('確認メールを送信しました')) {
+          setShowResendForm(true);
+        }
       } else {
         setError(data.message);
       }
@@ -73,6 +99,37 @@ export default function SignupPage() {
       setError('新規登録に失敗しました。');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // メール再送信処理
+  const handleResendEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResendLoading(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage(data.message);
+      } else {
+        setError(data.message);
+      }
+    } catch (error: any) {
+      console.error('Resend email error:', error);
+      setError('メール再送信に失敗しました。');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -109,8 +166,27 @@ export default function SignupPage() {
             {/* フォーム */}
             <form onSubmit={handleSignUp} className="space-y-4">
               <div>
+                <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 mb-2">
+                  ニックネーム <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="nickname"
+                  placeholder="あなたのニックネーム"
+                  value={nickname}
+                  onChange={e => setNickname(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  minLength={2}
+                  maxLength={20}
+                  disabled={loading}
+                />
+                <p className="text-xs text-gray-500 mt-1">2文字以上20文字以下で入力してください</p>
+              </div>
+
+              <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  メールアドレス
+                  メールアドレス <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -126,7 +202,7 @@ export default function SignupPage() {
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  パスワード
+                  パスワード <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="password"
@@ -144,7 +220,7 @@ export default function SignupPage() {
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                  パスワード（確認）
+                  パスワード（確認） <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="password"
@@ -158,10 +234,12 @@ export default function SignupPage() {
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
+                fullWidth
+                color="blue"
+                size="lg"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -171,8 +249,45 @@ export default function SignupPage() {
                 ) : (
                   '新規登録'
                 )}
-              </button>
+              </Button>
             </form>
+
+            {/* メール再送信フォーム */}
+            {showResendForm && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">メール確認が必要です</h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  確認メールが届いていない場合は、再送信してください。
+                </p>
+                <form onSubmit={handleResendEmail} className="space-y-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="メールアドレスを入力"
+                    className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    disabled={resendLoading}
+                  />
+                  <Button
+                    type="submit"
+                    fullWidth
+                    color="blue"
+                    size="sm"
+                    disabled={resendLoading}
+                  >
+                    {resendLoading ? (
+                      <div className="flex items-center justify-center">
+                        <LoadingSpinner size="sm" />
+                        <span className="ml-2">送信中...</span>
+                      </div>
+                    ) : (
+                      '確認メールを再送信'
+                    )}
+                  </Button>
+                </form>
+              </div>
+            )}
 
             {/* エラーメッセージ */}
             {error && (

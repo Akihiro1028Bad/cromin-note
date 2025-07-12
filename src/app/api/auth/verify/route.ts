@@ -6,21 +6,31 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Email verification API called');
+    console.log('=== Email Verification API Called ===');
+    console.log('Request URL:', request.url);
+    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
+    console.log('Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: process.env.VERCEL,
+      DATABASE_URL: process.env.DATABASE_URL ? 'set' : 'not set'
+    });
+    
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
-    console.log('Token received:', token ? 'exists' : 'not found');
+    console.log('Token received:', token ? `exists (length: ${token.length})` : 'not found');
+    console.log('Token preview:', token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'none');
+    console.log('All search params:', Object.fromEntries(searchParams.entries()));
+    console.log('=====================================');
 
     if (!token) {
       console.log('No token provided');
-      return NextResponse.json(
-        { success: false, message: '確認トークンがありません。' },
-        { status: 400 }
-      );
+      const errorUrl = new URL('/auth/error?message=確認トークンがありません。', request.url);
+      console.log('Error redirect URL:', errorUrl.toString());
+      return NextResponse.redirect(errorUrl);
     }
 
     // メール確認
-    console.log('Calling verifyEmail function');
+    console.log('Calling verifyEmail function with token');
     const result = await verifyEmail(token);
     console.log('verifyEmail result:', result);
 
@@ -38,21 +48,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(errorUrl);
     }
   } catch (error) {
+    console.error('=== Email Verification API Error ===');
     console.error('Email verification API error details:', {
       error: error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      code: (error as any)?.code
+      code: (error as any)?.code,
+      name: error instanceof Error ? error.name : undefined,
+      constructor: error?.constructor?.name,
+      isPrismaError: error instanceof Error && error.message.includes('prisma'),
+      isConnectionError: error instanceof Error && (
+        error.message.includes('connection') || 
+        error.message.includes('timeout') ||
+        error.message.includes('ECONNREFUSED')
+      ),
+      isDatasourceError: error instanceof Error && error.message.includes('datasource'),
+      isUrlError: error instanceof Error && error.message.includes('URL')
     });
     
-    // エラー時はJSONレスポンスを返す（リダイレクトではなく）
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: 'サーバーエラーが発生しました。',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    // エラー時はエラーページにリダイレクト
+    const errorMessage = error instanceof Error ? error.message : 'サーバーエラーが発生しました。';
+    const errorUrl = new URL(`/auth/error?message=${encodeURIComponent(errorMessage)}`, request.url);
+    console.log('Error redirect URL:', errorUrl.toString());
+    console.error('=====================================');
+    return NextResponse.redirect(errorUrl);
   }
 } 

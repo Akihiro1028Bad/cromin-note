@@ -19,7 +19,7 @@ model User {
   createdAt         DateTime       @default(now()) @map("created_at")
   updatedAt         DateTime       @updatedAt @map("updated_at")
   notes             Note[]
-  noteTemplates     NoteTemplate[]
+  opponents         Opponent[]
 
   @@map("cromin_users")
 }
@@ -28,7 +28,6 @@ model NoteType {
   id            Int            @id @default(autoincrement())
   name          String         @unique
   notes         Note[]
-  noteTemplates NoteTemplate[]
 
   @@map("note_types")
 }
@@ -37,15 +36,35 @@ model Result {
   id            Int            @id @default(autoincrement())
   name          String         @unique
   notes         Note[]
-  noteTemplates NoteTemplate[]
 
   @@map("results")
+}
+
+model Category {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  notes         Note[]
+
+  @@map("categories")
+}
+
+model Opponent {
+  id            String         @id @default(cuid())
+  name          String
+  userId        String         @map("user_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  noteOpponents NoteOpponent[]
+
+  @@unique([name, userId]) // ユーザーごとに名前の重複を防ぐ
+  @@index([userId])
+  @@map("opponents")
 }
 
 model Note {
   id            String     @id @default(cuid())
   title         String?
-  opponent      String?
   content       String?
   memo          String?
   condition     String?
@@ -53,6 +72,7 @@ model Note {
   userId        String     @map("user_id")
   typeId        Int        @map("type_id")
   resultId      Int?       @map("result_id")
+  categoryId    Int?       @map("category_id")
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
   matchDuration Int?       @map("match_duration")
@@ -60,17 +80,33 @@ model Note {
   wonSets       Int?       @map("won_sets")
   result        Result?    @relation(fields: [resultId], references: [id])
   noteType      NoteType   @relation(fields: [typeId], references: [id])
+  category      Category?  @relation(fields: [categoryId], references: [id])
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   scoreSets     ScoreSet[]
+  noteOpponents NoteOpponent[]
 
   @@index([userId, createdAt])
   @@index([isPublic, createdAt])
   @@index([typeId, resultId])
   @@index([userId, typeId]) // ユーザーとタイプでの検索
   @@index([userId, resultId]) // ユーザーと結果での検索
-  @@index([opponent]) // 対戦相手での検索
   @@index([createdAt]) // 日付での検索
+  @@index([categoryId]) // カテゴリでの検索
   @@map("cromin_notes")
+}
+
+model NoteOpponent {
+  id          String   @id @default(cuid())
+  noteId      String   @map("note_id")
+  opponentId  String   @map("opponent_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  opponent    Opponent @relation(fields: [opponentId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, opponentId])
+  @@index([noteId])
+  @@index([opponentId])
+  @@map("note_opponents")
 }
 
 model ScoreSet {
@@ -83,40 +119,4 @@ model ScoreSet {
 
   @@index([noteId]) // ノートIDでの検索
   @@map("score_sets")
-}
-
-model NoteTemplate {
-  id                String             @id @default(cuid())
-  userId            String             @map("user_id")
-  name              String
-  typeId            Int                @map("type_id")
-  title             String?
-  opponent          String?
-  content           String?
-  resultId          Int?               @map("result_id")
-  memo              String?
-  condition         String?
-  isPublic          Boolean            @default(false) @map("is_public")
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @updatedAt @map("updated_at")
-  matchDuration     Int?               @map("match_duration")
-  totalSets         Int?               @map("total_sets")
-  wonSets           Int?               @map("won_sets")
-  result            Result?            @relation(fields: [resultId], references: [id])
-  noteType          NoteType           @relation(fields: [typeId], references: [id])
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  templateScoreSets TemplateScoreSet[]
-
-  @@map("note_templates")
-}
-
-model TemplateScoreSet {
-  id            String       @id @default(cuid())
-  templateId    String       @map("template_id")
-  setNumber     Int          @map("set_number")
-  myScore       Int          @map("my_score")
-  opponentScore Int          @map("opponent_score")
-  template      NoteTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@map("template_score_sets")
 }

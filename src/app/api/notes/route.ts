@@ -24,19 +24,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { 
-      typeId, 
-      title, 
-      opponent, 
-      content, 
-      resultId, 
-      memo, 
-      condition, 
+    const {
+      typeId,
+      title,
+      content,
+      resultId,
+      categoryId,
+      memo,
+      condition,
       isPublic,
       scoreData,
       totalSets,
       wonSets,
-      matchDuration
+      matchDuration,
+      opponentIds // 追加: 対戦相手ID配列
     } = await request.json();
 
     // バリデーション
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
 
     // スコアデータをパース
     let scoreSets = [];
+    let calculatedResultId = resultId;
     if (scoreData) {
       try {
         const parsedScoreData = JSON.parse(scoreData);
@@ -57,6 +59,23 @@ export async function POST(request: NextRequest) {
           myScore: set.myScore,
           opponentScore: set.opponentScore
         }));
+        
+        // スコアから結果を自動計算
+        if (scoreSets.length > 0) {
+          const wonSets = scoreSets.filter((set: any) => set.myScore > set.opponentScore).length;
+          const totalSets = scoreSets.length;
+          
+          if (wonSets > totalSets / 2) {
+            // 勝ち
+            calculatedResultId = 1; // 勝ちのID（実際のDBのIDに合わせて調整）
+          } else if (wonSets < totalSets / 2) {
+            // 負け
+            calculatedResultId = 2; // 負けのID（実際のDBのIDに合わせて調整）
+          } else {
+            // 引き分け
+            calculatedResultId = 3; // 引き分けのID（実際のDBのIDに合わせて調整）
+          }
+        }
       } catch (error) {
         console.error('Score data parsing error:', error);
       }
@@ -68,9 +87,9 @@ export async function POST(request: NextRequest) {
         userId: decoded.userId,
         typeId: Number(typeId),
         title: title || null,
-        opponent: opponent || null,
         content: content || null,
-        resultId: resultId ? Number(resultId) : null,
+        resultId: calculatedResultId ? Number(calculatedResultId) : null,
+        categoryId: categoryId ? Number(categoryId) : null,
         memo: memo || null,
         condition: condition || null,
         isPublic: isPublic || false,
@@ -86,8 +105,31 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // 対戦相手の紐付け（note_opponents中間テーブル）
+    if (Array.isArray(opponentIds) && opponentIds.length > 0) {
+      await prisma.noteOpponent.createMany({
+        data: opponentIds.map((opponentId: string) => ({
+          noteId: note.id,
+          opponentId
+        }))
+      });
+    }
+
+    // note_opponentsも含めて返す
+    const noteWithOpponents = await prisma.note.findUnique({
+      where: { id: note.id },
+      include: {
+        scoreSets: true,
+        noteOpponents: {
+          include: {
+            opponent: true
+          }
+        }
+      }
+    });
+
     return NextResponse.json(
-      { success: true, note },
+      { success: true, note: noteWithOpponents },
       { status: 201 }
     );
   } catch (error) {

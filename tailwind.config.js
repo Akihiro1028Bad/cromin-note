@@ -9,22 +9,19 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#ff6b35',
-          dark: '#e55a2b',
+          DEFAULT: '#2563eb',
+          dark: '#1e40af',
         },
-        secondary: '#1e3a8a',
+        secondary: '#6b7280',
         accent: '#fbbf24',
         success: '#10b981',
         danger: '#ef4444',
         warning: '#f59e0b',
-        'bg-gradient-1': '#0f172a',
-        'bg-gradient-2': '#1e293b',
-        'bg-gradient-3': '#334155',
-        'text-primary': '#ffffff',
-        'text-secondary': '#e2e8f0',
-        'text-muted': '#cbd5e1',
-        'card-bg': 'rgba(15, 23, 42, 0.9)',
-        'card-border': 'rgba(251, 191, 36, 0.3)',
+        'text-primary': '#1f2937',
+        'text-secondary': '#6b7280',
+        'bg-primary': '#f9fafb',
+        'bg-secondary': '#ffffff',
+        'border-color': '#e5e7eb',
       },
       fontFamily: {
         sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
@@ -74,20 +71,10 @@ module.exports = {
           },
         },
       },
-      textColor: {
-        'white': {
-          '70': 'rgba(255, 255, 255, 0.7)',
-          '80': 'rgba(255, 255, 255, 0.8)',
-          '90': 'rgba(255, 255, 255, 0.9)',
-        },
-      },
-      backgroundColor: {
-        'white': {
-          '20': 'rgba(255, 255, 255, 0.2)',
-          '70': 'rgba(255, 255, 255, 0.7)',
-          '80': 'rgba(255, 255, 255, 0.8)',
-          '90': 'rgba(255, 255, 255, 0.9)',
-        },
+      boxShadow: {
+        'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
       },
     },
   },

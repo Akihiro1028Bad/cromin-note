@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loginUser } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -26,11 +27,41 @@ async function loginWithRetry(email: string, password: string, maxRetries = 3) {
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+  
+  // 環境変数チェック
+  logger.logEnvironmentCheck();
+  
+  // APIリクエストログ
+  logger.logApiRequest('POST', '/api/auth/login', {
+    requestId,
+    endpoint: '/api/auth/login'
+  });
+
+  let email: string | undefined;
+  let password: string | undefined;
+
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
+    email = body.email;
+    password = body.password;
 
     // バリデーション
     if (!email || !password) {
+      logger.logError({
+        error: new Error('Missing email or password'),
+        context: {
+          requestId,
+          endpoint: '/api/auth/login',
+          method: 'POST'
+        },
+        additionalInfo: {
+          hasEmail: !!email,
+          hasPassword: !!password
+        }
+      });
+      
       return NextResponse.json(
         { success: false, message: 'メールアドレスとパスワードを入力してください。' },
         { status: 400 }
@@ -40,7 +71,16 @@ export async function POST(request: NextRequest) {
     // リトライ機能付きでユーザーログイン
     const result = await loginWithRetry(email, password);
 
-    if (result.success && result.user && result.token) {
+    const duration = Date.now() - startTime;
+    
+    // データベース操作ログ
+    logger.logDatabaseOperation('login', duration, {
+      requestId,
+      endpoint: '/api/auth/login',
+      success: result?.success
+    });
+
+    if (result?.success && result.user && result.token) {
       // レスポンスにJWTトークンを含めて返す
       return NextResponse.json(
         { 
@@ -52,18 +92,44 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
     } else {
+      // ログイン失敗のログ
+      logger.logError({
+        error: new Error(result?.message || 'Login failed'),
+        context: {
+          requestId,
+          endpoint: '/api/auth/login',
+          method: 'POST',
+          duration: `${duration}ms`
+        },
+        additionalInfo: {
+          loginSuccess: result?.success,
+          hasUser: !!result?.user,
+          hasToken: !!result?.token
+        }
+      });
+      
       return NextResponse.json(
-        { success: false, message: result.message },
+        { success: false, message: result?.message || 'ログインに失敗しました。' },
         { status: 401 }
       );
     }
   } catch (error) {
-    console.error('Login API error details:', {
-      error: error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      code: (error as any)?.code,
-      name: error instanceof Error ? error.name : undefined
+    const duration = Date.now() - startTime;
+    
+    // 詳細なエラーログ
+    logger.logError({
+      error,
+      context: {
+        requestId,
+        endpoint: '/api/auth/login',
+        method: 'POST',
+        duration: `${duration}ms`
+      },
+      additionalInfo: {
+        email: email || 'not provided',
+        hasPassword: !!password,
+        errorType: error instanceof Error ? error.constructor.name : typeof error
+      }
     });
     
     // Prismaエラーの詳細な処理
@@ -72,6 +138,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { success: false, message: 'データベース接続エラーが発生しました。しばらく時間をおいて再度お試しください。' },
           { status: 503 }
+        );
+      }
+      
+      // Prisma Data Proxyエラーの処理
+      if (error.message.includes('prisma://')) {
+        logger.logError({
+          error: new Error('Prisma Data Proxy configuration detected'),
+          context: {
+            requestId,
+            endpoint: '/api/auth/login',
+            method: 'POST'
+          },
+          additionalInfo: {
+            originalError: error.message,
+            suggestion: 'Check Vercel environment variables for Data Proxy settings'
+          }
+        });
+        
+        return NextResponse.json(
+          { success: false, message: 'データベース設定エラーが発生しました。管理者にお問い合わせください。' },
+          { status: 500 }
         );
       }
     }

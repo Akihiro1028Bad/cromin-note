@@ -1,31 +1,36 @@
-import { NextResponse } from 'next/server';
-import { prisma, withCache } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
-// 動的レンダリングを強制
-export const dynamic = 'force-dynamic';
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // キャッシュを使用（10分間キャッシュ）
-    const types = await withCache(
-      'note-types',
-      async () => {
-        return await prisma.noteType.findMany({
-          orderBy: { id: 'asc' }
-        });
-      },
-      10 * 60 * 1000 // 10分
-    );
+    logger.info('ノートタイプと結果のマスターデータ取得開始')
 
-    return NextResponse.json(
-      { success: true, types },
-      { status: 200 }
-    );
+    // NoteTypeとResultのマスターデータを取得
+    const [noteTypes, results, categories] = await Promise.all([
+      prisma.noteType.findMany({
+        orderBy: { id: 'asc' }
+      }),
+      prisma.result.findMany({
+        orderBy: { id: 'asc' }
+      }),
+      prisma.category.findMany({
+        orderBy: { id: 'asc' }
+      })
+    ])
+
+    logger.info(`ノートタイプ: ${noteTypes.length}件, 結果: ${results.length}件, カテゴリ: ${categories.length}件を取得`)
+
+    return NextResponse.json({
+      noteTypes,
+      results,
+      categories
+    })
   } catch (error) {
-    console.error('Error fetching note types:', error);
+    logger.error('マスターデータ取得エラー:', error)
     return NextResponse.json(
-      { success: false, message: 'ノート種別の取得に失敗しました。' },
+      { error: 'マスターデータの取得に失敗しました' },
       { status: 500 }
-    );
+    )
   }
 } 

@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && next build",
-    "build:deploy": "prisma generate && prisma migrate deploy && next build",
+    "build": "rm -rf .next && prisma generate && next build",
+    "build:deploy": "rm -rf .next && prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "next lint",
     "db:seed": "tsx prisma/seed.ts",
@@ -15,7 +15,13 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "deploy:migrate": "node scripts/deploy-migrate.js",
-    "migrate:only": "node scripts/migrate-only.js"
+    "migrate:only": "node scripts/migrate-only.js",
+    "vercel-build": "rm -rf .next && node scripts/vercel-deploy.js",
+    "postinstall": "npx prisma generate",
+    "reset": "node scripts/local-reset.js",
+    "reset:full": "node scripts/local-reset.js && npm run dev",
+    "quick-reset": "./scripts/quick-reset.sh",
+    "reset:auto": "node scripts/reset-with-setup.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

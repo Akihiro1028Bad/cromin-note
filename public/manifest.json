@@ -1,0 +1,27 @@
+{
+  "name": "Cromin Note",
+  "short_name": "Cromin Note",
+  "description": "クロミンプレイヤーのためのノート管理サービス",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/next.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "sports"],
+  "lang": "ja",
+  "dir": "ltr"
+} 

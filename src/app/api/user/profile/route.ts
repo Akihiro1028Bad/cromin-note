@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { withPrisma } from '@/lib/prismaRetry';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -9,14 +9,15 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     // 認証チェック
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, message: '認証されていません。' },
+        { success: false, message: '認証が必要です。' },
         { status: 401 }
       );
     }
 
+    const token = authHeader.substring(7);
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -26,19 +27,23 @@ export async function GET(request: NextRequest) {
     }
 
     // ユーザー情報取得
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        nickname: true,
-        emailVerified: true,
-        createdAt: true,
-        updatedAt: true
-      }
+    const result = await withPrisma(async (prisma) => {
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: {
+          id: true,
+          email: true,
+          nickname: true,
+          emailVerified: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+
+      return { success: true, user };
     });
 
-    if (!user) {
+    if (!result.success || !result.user) {
       return NextResponse.json(
         { success: false, message: 'ユーザーが見つかりません。' },
         { status: 404 }
@@ -46,11 +51,11 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: true, user, profile: user },
+      { success: true, user: result.user },
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error fetching user profile:', error);
+    console.error('Profile fetch error:', error);
     return NextResponse.json(
       { success: false, message: 'プロフィールの取得に失敗しました。' },
       { status: 500 }
@@ -58,18 +63,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// プロフィール更新
 export async function PUT(request: NextRequest) {
   try {
     // 認証チェック
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, message: '認証されていません。' },
+        { success: false, message: '認証が必要です。' },
         { status: 401 }
       );
     }
 
+    const token = authHeader.substring(7);
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(
@@ -80,31 +85,65 @@ export async function PUT(request: NextRequest) {
 
     const { nickname } = await request.json();
 
+    // バリデーション
+    if (!nickname) {
+      return NextResponse.json(
+        { success: false, message: 'ニックネームを入力してください。' },
+        { status: 400 }
+      );
+    }
+
+    if (nickname.trim().length < 2) {
+      return NextResponse.json(
+        { success: false, message: 'ニックネームは2文字以上で入力してください。' },
+        { status: 400 }
+      );
+    }
+
+    if (nickname.trim().length > 20) {
+      return NextResponse.json(
+        { success: false, message: 'ニックネームは20文字以下で入力してください。' },
+        { status: 400 }
+      );
+    }
+
     // プロフィール更新
-    const user = await prisma.user.update({
-      where: { id: decoded.userId },
-      data: {
-        nickname: nickname || null,
-        updatedAt: new Date()
-      },
-      select: {
-        id: true,
-        email: true,
-        nickname: true,
-        emailVerified: true,
-        createdAt: true,
-        updatedAt: true
-      }
+    const result = await withPrisma(async (prisma) => {
+      const updatedUser = await prisma.user.update({
+        where: { id: decoded.userId },
+        data: { nickname: nickname.trim() },
+        select: {
+          id: true,
+          email: true,
+          nickname: true,
+          emailVerified: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+
+      return { success: true, user: updatedUser };
     });
 
-    return NextResponse.json(
-      { success: true, user, profile: user },
-      { status: 200 }
-    );
+    if (result.success) {
+      return NextResponse.json(
+        { 
+          success: true, 
+          message: 'プロフィールを更新しました。',
+          user: result.user
+        },
+        { status: 200 }
+      );
+    } else {
+      return NextResponse.json(
+        { success: false, message: 'プロフィールの更新に失敗しました。' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error('Error updating user profile:', error);
+    console.error('Profile update error:', error);
     return NextResponse.json(
-      { success: false, message: 'プロフィールの更新に失敗しました。' },
+      { success: false, message: 'サーバーエラーが発生しました。' },
       { status: 500 }
     );
   }

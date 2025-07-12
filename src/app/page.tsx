@@ -1,19 +1,26 @@
 "use client";
-import { useAuth } from "@/hooks/useAuth";
-import { PageTransition } from '@/components';
+import { useAuth } from "@/contexts/AuthContext";
+import { PageTransition, Button } from '@/components';
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
-  // ログイン済みならダッシュボードへリダイレクト
+  // ログイン済みならホームページへリダイレクト
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/dashboard");
+      setShouldRedirect(true);
     }
-  }, [user, loading, router]);
+  }, [user, loading]); // routerを依存関係から削除
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.replace("/home");
+    }
+  }, [shouldRedirect]); // routerを依存関係から削除
 
   // ローディング中は何も表示しない
   if (loading) {
@@ -29,12 +36,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <h1 className="text-xl font-bold text-gray-900">Cromin Note</h1>
               {!loading && !user && (
-                <button
-                  onClick={() => router.push("/auth")}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  ログイン
-                </button>
+                <Button fullWidth color="blue" size="md" onClick={() => router.push("/auth/login")}>ログイン</Button>
               )}
             </div>
           </div>
@@ -58,33 +60,13 @@ export default function Home() {
           {/* クイックアクション */}
           {!loading && user ? (
             <div className="space-y-3 mb-8">
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                ダッシュボード
-              </button>
-              <button
-                onClick={() => router.push("/notes/new")}
-                className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-              >
-                ノート投稿
-              </button>
-              <button
-                onClick={() => router.push("/notes")}
-                className="w-full bg-purple-600 text-white py-4 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-              >
-                みんなのノート
-              </button>
+              <Button fullWidth color="blue" size="lg" onClick={() => router.push("/home")}>ホーム</Button>
+              <Button fullWidth color="green" size="lg" onClick={() => router.push("/notes/new")}>ノート投稿</Button>
+              <Button fullWidth color="purple" size="lg" onClick={() => router.push("/notes")}>みんなのノート</Button>
             </div>
           ) : (
             <div className="space-y-3 mb-8">
-              <button
-                onClick={() => router.push("/auth")}
-                className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                無料で始める
-              </button>
+              <Button fullWidth color="blue" size="lg" onClick={() => router.push("/auth/signup")}>無料で始める</Button>
             </div>
           )}
 
@@ -124,10 +106,10 @@ export default function Home() {
           </div>
 
           {/* 使い方 */}
-          <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="bg-white rounded-lg p-4 border border-gray-200 mb-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">使い方</h3>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
                   1
                 </div>
@@ -136,7 +118,7 @@ export default function Home() {
                   <div className="text-sm text-gray-600">メールアドレスとパスワードで簡単登録</div>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
                   2
                 </div>
@@ -145,7 +127,7 @@ export default function Home() {
                   <div className="text-sm text-gray-600">種別を選んでノートを作成</div>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
                   3
                 </div>
