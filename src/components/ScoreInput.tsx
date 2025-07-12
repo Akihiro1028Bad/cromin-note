@@ -46,6 +46,45 @@ export default function ScoreInput({
     }
   }, [initialShow]);
 
+  // セット数が変更された時に自動でスコア入力欄を生成
+  useEffect(() => {
+    if (totalSets > 0) {
+      if (scoreData.length === 0) {
+        // スコアデータが空の場合は新しく生成
+        console.log('ScoreInput: セット数が設定されたため、自動でスコア入力欄を生成します');
+        const newScoreData = Array.from({ length: totalSets }, (_, index) => ({
+          setNumber: index + 1,
+          myScore: 0,
+          opponentScore: 0
+        }));
+        onScoreChange(newScoreData);
+      } else if (scoreData.length !== totalSets) {
+        // セット数が変更された場合は既存データを調整
+        console.log('ScoreInput: セット数が変更されたため、スコアデータを調整します');
+        if (scoreData.length < totalSets) {
+          // セット数が増えた場合は追加
+          const additionalSets = Array.from({ length: totalSets - scoreData.length }, (_, index) => ({
+            setNumber: scoreData.length + index + 1,
+            myScore: 0,
+            opponentScore: 0
+          }));
+          onScoreChange([...scoreData, ...additionalSets]);
+        } else {
+          // セット数が減った場合は削除
+          const adjustedScores = scoreData.slice(0, totalSets).map((score, index) => ({
+            ...score,
+            setNumber: index + 1
+          }));
+          onScoreChange(adjustedScores);
+        }
+      }
+    } else if (totalSets === 0) {
+      // セット数が0にリセットされた場合はスコアデータをクリア
+      console.log('ScoreInput: セット数が0にリセットされたため、スコアデータをクリアします');
+      onScoreChange([]);
+    }
+  }, [totalSets, scoreData.length, onScoreChange]);
+
   // コンポーネントマウント時の初期化
   useEffect(() => {
     console.log('ScoreInput: コンポーネントマウント時の状態');

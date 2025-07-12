@@ -128,7 +128,7 @@ export default function EditNotePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!typeId || !note) return;
+    if (!typeId || !note || !title.trim()) return;
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
@@ -263,7 +263,7 @@ export default function EditNotePage() {
                   color="blue"
                   size="md"
                   onClick={() => handleSubmit(new Event('submit') as any)}
-                  disabled={submitting || !typeId}
+                  disabled={submitting || !typeId || !title.trim()}
                 >
                   {submitting ? '更新中...' : '更新'}
                 </Button>
@@ -298,7 +298,7 @@ export default function EditNotePage() {
             {/* タイトル */}
             <div>
               <label className="block text-sm font-medium text-text-primary mb-2">
-                タイトル
+                タイトル <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
@@ -306,41 +306,46 @@ export default function EditNotePage() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="タイトルを入力"
                 className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                required
               />
             </div>
 
-            {/* 対戦相手 */}
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                対戦相手
-              </label>
-              <input
-                type="text"
-                value={opponent}
-                onChange={(e) => setOpponent(e.target.value)}
-                placeholder="対戦相手を入力"
-                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
-              />
-            </div>
+            {/* 対戦相手（ゲーム練習・公式試合のみ） */}
+            {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  対戦相手
+                </label>
+                <input
+                  type="text"
+                  value={opponent}
+                  onChange={(e) => setOpponent(e.target.value)}
+                  placeholder="対戦相手を入力"
+                  className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                />
+              </div>
+            )}
 
-            {/* 結果 */}
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                結果
-              </label>
-              <select
-                value={resultId}
-                onChange={(e) => setResultId(Number(e.target.value))}
-                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
-              >
-                <option value="">結果を選択</option>
-                {results.map((result) => (
-                  <option key={result.id} value={result.id}>
-                    {result.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* 結果（ゲーム練習・公式試合のみ） */}
+            {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  結果
+                </label>
+                <select
+                  value={resultId}
+                  onChange={(e) => setResultId(Number(e.target.value))}
+                  className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                >
+                  <option value="">結果を選択</option>
+                  {results.map((result) => (
+                    <option key={result.id} value={result.id}>
+                      {result.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* スコア入力 */}
             {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
