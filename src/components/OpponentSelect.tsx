@@ -254,17 +254,22 @@ function OpponentSelectField({
         type="button"
         onClick={() => setIsModalOpen(true)}
         disabled={disabled}
-        className={`w-full h-12 px-4 border rounded-lg text-left flex items-center justify-between transition-colors ${
+        className={`w-full h-14 px-4 border rounded-lg text-left flex items-center justify-between transition-colors ${
           disabled 
             ? 'bg-gray-100 text-gray-400 border-gray-200' 
             : value
             ? 'bg-blue-50 border-blue-300 text-blue-900'
-            : 'bg-white border-gray-300 text-gray-500 hover:border-blue-400'
+            : 'bg-white border-gray-300 text-gray-500 hover:border-blue-400 active:bg-gray-50'
         }`}
       >
-        <span className="truncate">
-          {value || placeholder}
-        </span>
+        <div className="flex items-center gap-3">
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <span className="truncate text-base">
+            {value || placeholder}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           {value && (
             <div
@@ -272,9 +277,11 @@ function OpponentSelectField({
                 e.stopPropagation()
                 onClear()
               }}
-              className="text-red-500 hover:text-red-700 w-5 h-5 flex items-center justify-center cursor-pointer"
+              className="text-red-500 hover:text-red-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 transition-colors cursor-pointer"
             >
-              ×
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </div>
           )}
           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,8 +292,8 @@ function OpponentSelectField({
 
       {/* 選択モーダル */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50 sm:items-center">
-          <div className="bg-white rounded-t-lg sm:rounded-lg w-full max-w-md max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">
             {/* ヘッダー */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-lg font-bold text-gray-900">
@@ -294,7 +301,7 @@ function OpponentSelectField({
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -304,14 +311,29 @@ function OpponentSelectField({
 
             {/* 検索ボックス */}
             <div className="p-4 border-b border-gray-200">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="対戦相手を検索..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                autoFocus
-              />
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="対戦相手を検索..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* 対戦相手リスト */}
@@ -340,14 +362,14 @@ function OpponentSelectField({
                       disabled={disabled}
                       className={`w-full px-4 py-4 text-left hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors ${
                         value === opponent.name
-                          ? 'bg-blue-50 text-blue-800' 
+                          ? 'bg-blue-50 text-blue-800 border-l-4 border-blue-500' 
                           : 'text-gray-900'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-base">{opponent.name}</span>
+                        <span className="text-base font-medium">{opponent.name}</span>
                         {value === opponent.name && (
-                          <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -356,6 +378,17 @@ function OpponentSelectField({
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* フッター */}
+            <div className="p-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+              >
+                キャンセル
+              </button>
             </div>
           </div>
         </div>
