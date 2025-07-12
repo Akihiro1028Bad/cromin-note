@@ -36,7 +36,6 @@ export default function EditNotePage() {
   const [scoreData, setScoreData] = useState<ScoreSet[]>([]);
   const [totalSets, setTotalSets] = useState(0);
   const [matchDuration, setMatchDuration] = useState(0);
-  const [showScoreInput, setShowScoreInput] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -45,16 +44,13 @@ export default function EditNotePage() {
   // スコアデータが変更された場合のデバッグログ
   useEffect(() => {
     console.log('スコアデータが更新されました:', scoreData);
-    console.log('表示状態:', showScoreInput);
     console.log('ScoreInputに渡すprops:', {
       scoreData,
       totalSets,
       matchDuration,
-      showScoreInput,
-      scoreDataLength: scoreData.length,
-      initialShow: showScoreInput || scoreData.length > 0
+      scoreDataLength: scoreData.length
     });
-  }, [scoreData, showScoreInput, totalSets, matchDuration]);
+  }, [scoreData, totalSets, matchDuration]);
 
   const fetchData = async () => {
     try {
@@ -95,11 +91,6 @@ export default function EditNotePage() {
           const savedTotalSets = noteData.totalSets || parsedScoreData.length;
           console.log('設定するセット数:', savedTotalSets);
           setTotalSets(savedTotalSets);
-          // スコアデータが存在する場合は初期状態でスコア入力セクションを開く
-          if (parsedScoreData.length > 0) {
-            console.log('スコアデータが存在するため、スコア入力セクションを表示します');
-            setShowScoreInput(true);
-          }
         } catch (e) {
           console.error('スコアデータの解析に失敗:', e);
           setScoreData([]);
@@ -129,6 +120,18 @@ export default function EditNotePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!typeId || !note || !title.trim()) return;
+    
+    // ゲーム練習・公式試合の場合はスコアと対戦相手が必須
+    if (selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') {
+      if (!isValidScoreData(scoreData)) {
+        alert('スコアを入力してください。');
+        return;
+      }
+      if (!opponent.trim()) {
+        alert('対戦相手を入力してください。');
+        return;
+      }
+    }
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
@@ -192,6 +195,14 @@ export default function EditNotePage() {
 
   const selectedType = noteTypes.find(t => t.id === typeId);
 
+  // スコアデータが有効かどうかを判定する関数
+  const isValidScoreData = (scores: ScoreSet[]): boolean => {
+    if (scores.length === 0) return false;
+    
+    // 全てのセットで0-0以外のスコアが入力されているかチェック
+    return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
+  };
+
   if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
   if (!note) return <div className="p-8">ノートが見つかりません。</div>;
   
@@ -232,41 +243,22 @@ export default function EditNotePage() {
 
   return (
     <PageTransition>
-      <main className="min-h-screen bg-bg-primary">
+      <main className="min-h-screen bg-bg-primary pb-24">
         {/* ヘッダー */}
         <div className="bg-bg-secondary border-b border-border-color shadow-sm sticky top-0 z-10">
           <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => router.back()}
-                  className="p-2 text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-gray-100"
-                  title="戻る"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <div>
-                  <h1 className="text-lg font-bold text-text-primary">ノート編集</h1>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  color="gray"
-                  size="md"
-                  onClick={() => router.back()}
-                >
-                  キャンセル
-                </Button>
-                <Button
-                  color="blue"
-                  size="md"
-                  onClick={() => handleSubmit(new Event('submit') as any)}
-                  disabled={submitting || !typeId || !title.trim()}
-                >
-                  {submitting ? '更新中...' : '更新'}
-                </Button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.back()}
+                className="p-2 text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-gray-100"
+                title="戻る"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div>
+                <h1 className="text-lg font-bold text-text-primary">ノート編集</h1>
               </div>
             </div>
           </div>
@@ -283,7 +275,9 @@ export default function EditNotePage() {
               <select
                 value={typeId}
                 onChange={(e) => setTypeId(Number(e.target.value))}
-                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                className={`w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200 ${
+                  !typeId ? 'border-red-300 bg-red-50' : 'border-border-color'
+                }`}
                 required
               >
                 <option value="">種別を選択</option>
@@ -305,51 +299,39 @@ export default function EditNotePage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="タイトルを入力"
-                className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                className={`w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200 ${
+                  !title.trim() ? 'border-red-300 bg-red-50' : 'border-border-color'
+                }`}
                 required
               />
             </div>
 
-            {/* 対戦相手（ゲーム練習・公式試合のみ） */}
+            {/* 対戦相手（ゲーム練習・公式試合のみ・必須） */}
             {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-2">
-                  対戦相手
+                  対戦相手 <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
                   value={opponent}
                   onChange={(e) => setOpponent(e.target.value)}
                   placeholder="対戦相手を入力"
-                  className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
+                  className={`w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200 ${
+                    !opponent.trim() ? 'border-red-300 bg-red-50' : 'border-border-color'
+                  }`}
+                  required
                 />
               </div>
             )}
 
-            {/* 結果（ゲーム練習・公式試合のみ） */}
-            {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  結果
-                </label>
-                <select
-                  value={resultId}
-                  onChange={(e) => setResultId(Number(e.target.value))}
-                  className="w-full border border-border-color rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors duration-200"
-                >
-                  <option value="">結果を選択</option>
-                  {results.map((result) => (
-                    <option key={result.id} value={result.id}>
-                      {result.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* スコア入力 */}
+            {/* スコア入力（ゲーム練習・公式試合のみ・必須） */}
             {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
               <div className="bg-bg-secondary rounded-lg p-4 border border-border-color">
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-medium text-text-primary">スコア記録</h3>
+                  <span className="text-danger text-sm">*</span>
+                </div>
                 <ScoreInput
                   scoreData={scoreData}
                   onScoreChange={setScoreData}
@@ -357,7 +339,6 @@ export default function EditNotePage() {
                   onTotalSetsChange={setTotalSets}
                   matchDuration={matchDuration}
                   onMatchDurationChange={setMatchDuration}
-                  initialShow={showScoreInput || scoreData.length > 0}
                 />
               </div>
             )}
@@ -425,21 +406,59 @@ export default function EditNotePage() {
           </form>
         </div>
 
-        {/* フローティングアクションボタン */}
-        <div className="fixed bottom-6 right-6 z-20">
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || !typeId}
-            className="w-14 h-14 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? (
-              <LoadingSpinner size="sm" />
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+        {/* 固定フッター */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
+          <div className="px-4 py-4">
+            {/* 必須項目進捗バー */}
+            {!submitting && (
+              <div className="mb-3">
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>必須項目</span>
+                  <span>
+                    {(() => {
+                      const total = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? 4 : 2;
+                      const completed = [
+                        typeId,
+                        title.trim(),
+                        selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? opponent.trim() : true,
+                        selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? isValidScoreData(scoreData) : true
+                      ].filter(Boolean).length;
+                      return `${completed}/${total}`;
+                    })()}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${(() => {
+                        const total = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? 4 : 2;
+                        const completed = [
+                          typeId,
+                          title.trim(),
+                          selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? opponent.trim() : true,
+                          selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? isValidScoreData(scoreData) : true
+                        ].filter(Boolean).length;
+                        return (completed / total) * 100;
+                      })()}%`
+                    }}
+                  ></div>
+                </div>
+              </div>
             )}
-          </button>
+            
+            {/* 更新ボタン */}
+            <Button
+              color="blue"
+              size="lg"
+              onClick={() => handleSubmit(new Event('submit') as any)}
+              disabled={submitting || !typeId || !title.trim() || 
+                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !opponent.trim()))}
+              className="w-full"
+            >
+              {submitting ? '更新中...' : '更新'}
+            </Button>
+          </div>
         </div>
       </main>
     </PageTransition>

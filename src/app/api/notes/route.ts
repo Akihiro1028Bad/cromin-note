@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
 
     // スコアデータをパース
     let scoreSets = [];
+    let calculatedResultId = resultId;
     if (scoreData) {
       try {
         const parsedScoreData = JSON.parse(scoreData);
@@ -57,6 +58,23 @@ export async function POST(request: NextRequest) {
           myScore: set.myScore,
           opponentScore: set.opponentScore
         }));
+        
+        // スコアから結果を自動計算
+        if (scoreSets.length > 0) {
+          const wonSets = scoreSets.filter((set: any) => set.myScore > set.opponentScore).length;
+          const totalSets = scoreSets.length;
+          
+          if (wonSets > totalSets / 2) {
+            // 勝ち
+            calculatedResultId = 1; // 勝ちのID（実際のDBのIDに合わせて調整）
+          } else if (wonSets < totalSets / 2) {
+            // 負け
+            calculatedResultId = 2; // 負けのID（実際のDBのIDに合わせて調整）
+          } else {
+            // 引き分け
+            calculatedResultId = 3; // 引き分けのID（実際のDBのIDに合わせて調整）
+          }
+        }
       } catch (error) {
         console.error('Score data parsing error:', error);
       }
@@ -70,7 +88,7 @@ export async function POST(request: NextRequest) {
         title: title || null,
         opponent: opponent || null,
         content: content || null,
-        resultId: resultId ? Number(resultId) : null,
+        resultId: calculatedResultId ? Number(calculatedResultId) : null,
         memo: memo || null,
         condition: condition || null,
         isPublic: isPublic || false,
