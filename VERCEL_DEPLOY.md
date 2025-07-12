@@ -29,7 +29,8 @@ GMAIL_APP_PASSWORD="your-app-password"
 NODE_ENV="production"
 
 # Prisma
-PRISMA_GENERATE_DATAPROXY="true"
+# 注意: PRISMA_GENERATE_DATAPROXYは設定しないでください
+# 通常のPostgreSQL接続を使用するため、Data Proxyは無効化しています
 ```
 
 ## デプロイ手順
@@ -65,6 +66,11 @@ PRISMA_GENERATE_DATAPROXY="true"
 ### ビルドエラー
 - Node.jsバージョンが18以上であることを確認
 - 依存関係が正しくインストールされているか確認
+
+### Prisma Data Proxyエラー
+- `prisma://`形式のURLが要求される場合、Data Proxy設定を確認
+- `vercel.json`で`PRISMA_GENERATE_DATAPROXY`が設定されていないか確認
+- 通常のPostgreSQL接続を使用する場合は、Data Proxy設定を削除
 
 ## 注意事項
 
