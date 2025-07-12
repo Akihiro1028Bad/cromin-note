@@ -99,7 +99,7 @@ body {
 
 /* 統一ボタンカラーバリエーション */
 .btn-blue {
-  background: #2563eb;
+  background: var(--primary);
   color: white;
   font-weight: 600;
   border: none;
@@ -109,12 +109,12 @@ body {
 }
 
 .btn-blue:hover {
-  background: #1d4ed8;
+  background: var(--primary-dark);
   color: white;
 }
 
 .btn-green {
-  background: #059669;
+  background: var(--success);
   color: white;
   font-weight: 600;
   border: none;
@@ -144,7 +144,7 @@ body {
 }
 
 .btn-red {
-  background: #dc2626;
+  background: var(--danger);
   color: white;
   font-weight: 600;
   border: none;
@@ -159,7 +159,7 @@ body {
 }
 
 .btn-gray {
-  background: #6b7280;
+  background: var(--text-secondary);
   color: white;
   font-weight: 600;
   border: none;

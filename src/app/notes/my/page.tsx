@@ -4,29 +4,45 @@ import { NoteWithRelations } from "@/types/database";
 import { PageTransition, Button, LoadingSpinner } from '@/components';
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
-export default function NotesPage() {
+export default function MyNotesPage() {
   const [notes, setNotes] = useState<NoteWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchNotes();
-  }, []);
+    if (user) {
+      fetchMyNotes();
+    }
+  }, [user]);
 
-  const fetchNotes = async () => {
+  const fetchMyNotes = async () => {
     try {
-      const res = await fetch('/api/notes/public');
-      if (!res.ok) throw new Error('ノート取得APIエラー');
-      const json = await res.json();
-      console.log('Fetched notes data:', json.notes); // デバッグ用
-      // 日付データのデバッグ
-      if (json.notes && json.notes.length > 0) {
-        console.log('First note createdAt:', json.notes[0].createdAt);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token found');
+        setLoading(false);
+        return;
       }
-      setNotes(json.notes || []);
+
+      const res = await fetch('/api/notes/my', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'ノート取得APIエラー');
+      }
+      
+      const json = await res.json();
+      console.log('Fetched my notes data:', json);
+      setNotes(json.data || []);
     } catch (error) {
-      console.error('Error fetching notes:', error);
+      console.error('Error fetching my notes:', error);
     } finally {
       setLoading(false);
     }
@@ -41,7 +57,7 @@ export default function NotesPage() {
         <div className="bg-bg-secondary border-b border-border-color shadow-sm sticky top-0 z-10">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-bold text-text-primary">みんなのノート</h1>
+              <h1 className="text-lg font-bold text-text-primary">マイノート</h1>
               <Button
                 color="blue"
                 size="md"
@@ -57,16 +73,16 @@ export default function NotesPage() {
         <div className="px-4 py-6">
           {notes.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">📝</div>
-              <div className="text-xl font-bold text-text-primary mb-4">まだ公開されたノートがありません</div>
-              <div className="text-text-secondary mb-6">最初のノートを投稿してみましょう！</div>
+              <div className="text-6xl mb-4">📖</div>
+              <div className="text-xl font-bold text-text-primary mb-4">まだノートがありません</div>
+              <div className="text-text-secondary mb-6">最初のノートを作成してみましょう！</div>
               <Button 
                 fullWidth 
                 color="blue" 
                 size="lg" 
                 onClick={() => router.push("/notes/new")}
               >
-                ノートを投稿する
+                ノートを作成する
               </Button>
             </div>
           ) : (
@@ -94,6 +110,11 @@ export default function NotesPage() {
                             'bg-warning/10 text-warning'
                           }`}>
                             {note.result.name}
+                          </span>
+                        )}
+                        {note.isPublic && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            公開
                           </span>
                         )}
                       </div>
