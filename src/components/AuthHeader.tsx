@@ -39,7 +39,7 @@ export default function AuthHeader() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, []); // 空の依存関係配列で一度だけ実行
 
   // メニュー切り替え時の自動閉じる機能
   const handleMobileMenuToggle = () => {

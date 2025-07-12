@@ -96,11 +96,6 @@ export const useAuth = () => {
           error: null
         });
         
-        // 認証状態の変更を確実にするため、少し待ってからユーザー情報を再取得
-        setTimeout(() => {
-          fetchUser();
-        }, 100);
-        
         return { success: true, message: data.message };
       } else {
         return { success: false, message: data.message };
@@ -152,17 +147,18 @@ export const useAuth = () => {
       const token = localStorage.getItem('token');
       if (!token && authState.user) {
         // トークンが削除された場合、ユーザー状態をリセット
-        setAuthState({
+        setAuthState(prev => ({
+          ...prev,
           user: null,
           loading: false,
           error: null
-        });
+        }));
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [authState.user]);
+  }, []); // authState.userを依存関係から削除
 
   return {
     user: authState.user,
