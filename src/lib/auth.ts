@@ -308,46 +308,55 @@ export const loginUser = async (email: string, password: string): Promise<{ succ
 
 // メール確認
 export const verifyEmail = async (token: string): Promise<{ success: boolean; message: string }> => {
-  try {
-    console.log('verifyEmail called with token:', token ? 'exists' : 'not found');
-    
-    // トークンでユーザー検索
-    console.log('Searching for user with verification token');
-    const user = await prisma.user.findFirst({
-      where: {
-        verificationToken: token,
-        emailVerified: false
-      }
-    });
-    console.log('User found:', user ? 'yes' : 'no');
+  return withPrisma(async (prisma) => {
+    try {
+      console.log('verifyEmail called with token:', token ? 'exists' : 'not found');
+      console.log('Environment check:', {
+        NODE_ENV: process.env.NODE_ENV,
+        VERCEL: process.env.VERCEL,
+        DATABASE_URL: process.env.DATABASE_URL ? 'set' : 'not set'
+      });
+      
+      // トークンでユーザー検索
+      console.log('Searching for user with verification token');
+      const user = await prisma.user.findFirst({
+        where: {
+          verificationToken: token,
+          emailVerified: false
+        }
+      });
+      console.log('User found:', user ? 'yes' : 'no');
 
-    if (!user) {
-      console.log('No user found with this verification token');
-      return { success: false, message: '無効な確認リンクです。' };
+      if (!user) {
+        console.log('No user found with this verification token');
+        return { success: false, message: '無効な確認リンクです。' };
+      }
+
+      // メール確認完了
+      console.log('Updating user email verification status');
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          verificationToken: null,
+          updatedAt: new Date()
+        }
+      });
+      console.log('User email verification updated successfully');
+
+      return { success: true, message: 'メールアドレスの確認が完了しました。' };
+    } catch (error) {
+      console.error('Email verification error details:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        code: (error as any)?.code,
+        name: error instanceof Error ? error.name : undefined,
+        constructor: error?.constructor?.name
+      });
+      return { success: false, message: `メール確認に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}` };
     }
-
-    // メール確認完了
-    console.log('Updating user email verification status');
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerified: true,
-        verificationToken: null,
-        updatedAt: new Date()
-      }
-    });
-    console.log('User email verification updated successfully');
-
-    return { success: true, message: 'メールアドレスの確認が完了しました。' };
-  } catch (error) {
-    console.error('Email verification error details:', {
-      error: error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      code: (error as any)?.code
-    });
-    return { success: false, message: `メール確認に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}` };
-  }
+  });
 }; 
 
 // 認証メール再送信

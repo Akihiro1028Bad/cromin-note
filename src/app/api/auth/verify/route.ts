@@ -8,6 +8,11 @@ export async function GET(request: NextRequest) {
   try {
     console.log('Email verification API called');
     console.log('Request URL:', request.url);
+    console.log('Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: process.env.VERCEL,
+      DATABASE_URL: process.env.DATABASE_URL ? 'set' : 'not set'
+    });
     
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
@@ -44,7 +49,15 @@ export async function GET(request: NextRequest) {
       error: error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      code: (error as any)?.code
+      code: (error as any)?.code,
+      name: error instanceof Error ? error.name : undefined,
+      constructor: error?.constructor?.name,
+      isPrismaError: error instanceof Error && error.message.includes('prisma'),
+      isConnectionError: error instanceof Error && (
+        error.message.includes('connection') || 
+        error.message.includes('timeout') ||
+        error.message.includes('ECONNREFUSED')
+      )
     });
     
     // エラー時はエラーページにリダイレクト
