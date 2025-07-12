@@ -416,13 +416,23 @@ export default function EditNotePage() {
                   <span>必須項目</span>
                   <span>
                     {(() => {
-                      const total = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? 4 : 2;
-                      const completed = [
-                        typeId,
-                        title.trim(),
-                        selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? opponent.trim() : true,
-                        selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? isValidScoreData(scoreData) : true
-                      ].filter(Boolean).length;
+                      const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
+                      const total = isGameOrMatch ? 4 : 2;
+                      
+                      // 種別に応じて実際に必要な項目のみを配列に含める
+                      const requiredItems = isGameOrMatch 
+                        ? [
+                            typeId,
+                            title.trim(),
+                            opponent.trim(),
+                            isValidScoreData(scoreData)
+                          ]
+                        : [
+                            typeId,
+                            title.trim()
+                          ];
+                      
+                      const completed = requiredItems.filter(Boolean).length;
                       return `${completed}/${total}`;
                     })()}
                   </span>
@@ -432,13 +442,23 @@ export default function EditNotePage() {
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{
                       width: `${(() => {
-                        const total = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? 4 : 2;
-                        const completed = [
-                          typeId,
-                          title.trim(),
-                          selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? opponent.trim() : true,
-                          selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合' ? isValidScoreData(scoreData) : true
-                        ].filter(Boolean).length;
+                        const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
+                        const total = isGameOrMatch ? 4 : 2;
+                        
+                        // 種別に応じて実際に必要な項目のみを配列に含める
+                        const requiredItems = isGameOrMatch 
+                          ? [
+                              typeId,
+                              title.trim(),
+                              opponent.trim(),
+                              isValidScoreData(scoreData)
+                            ]
+                          : [
+                              typeId,
+                              title.trim()
+                            ];
+                        
+                        const completed = requiredItems.filter(Boolean).length;
                         return (completed / total) * 100;
                       })()}%`
                     }}
