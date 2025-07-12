@@ -15,6 +15,11 @@ export default function AuthHeader() {
 
   if (!user) return null;
 
+  const handleNavigation = (path: string) => {
+    router.push(path);
+    setIsMenuOpen(false);
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
       <div className="px-4 py-3">
@@ -132,43 +137,75 @@ export default function AuthHeader() {
         {/* モバイルナビゲーション */}
         {isMenuOpen && (
           <div className="md:hidden mt-3 pt-3 border-t border-gray-200">
-            <nav className="space-y-2">
-              <button
-                onClick={() => {
-                  router.push("/home");
-                  setIsMenuOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              >
-                ホーム
-              </button>
-              <button
-                onClick={() => {
-                  router.push("/notes");
-                  setIsMenuOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              >
-                ノート
-              </button>
-              <button
-                onClick={() => {
-                  router.push("/analytics");
-                  setIsMenuOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              >
-                分析
-              </button>
-              <button
-                onClick={() => {
-                  router.push("/notes/new");
-                  setIsMenuOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
-              >
-                + 新規作成
-              </button>
+            <nav className="space-y-1">
+              {/* メインナビゲーション */}
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">メインメニュー</h3>
+                <button
+                  onClick={() => handleNavigation("/home")}
+                  className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
+                >
+                  <span className="text-lg">🏠</span>
+                  <span className="font-medium">ホーム</span>
+                </button>
+                <button
+                  onClick={() => handleNavigation("/notes")}
+                  className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
+                >
+                  <span className="text-lg">📝</span>
+                  <span className="font-medium">みんなのノート</span>
+                </button>
+                <button
+                  onClick={() => handleNavigation("/analytics")}
+                  className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
+                >
+                  <span className="text-lg">📊</span>
+                  <span className="font-medium">成績分析</span>
+                </button>
+              </div>
+
+              {/* アクション */}
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">アクション</h3>
+                <button
+                  onClick={() => handleNavigation("/notes/new")}
+                  className="w-full text-left px-3 py-3 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3 font-medium"
+                >
+                  <span className="text-lg">➕</span>
+                  <span>新規ノート作成</span>
+                </button>
+              </div>
+
+              {/* 設定 */}
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">設定</h3>
+                <button
+                  onClick={() => handleNavigation("/settings")}
+                  className="w-full text-left px-3 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-3"
+                >
+                  <span className="text-lg">⚙️</span>
+                  <span>設定</span>
+                </button>
+              </div>
+
+              {/* アカウント */}
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-2">アカウント</h3>
+                <div className="px-3 py-2 mb-2">
+                  <p className="text-sm font-medium text-gray-900">{user.nickname || 'ユーザー'}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-3"
+                >
+                  <span className="text-lg">🚪</span>
+                  <span>ログアウト</span>
+                </button>
+              </div>
             </nav>
           </div>
         )}

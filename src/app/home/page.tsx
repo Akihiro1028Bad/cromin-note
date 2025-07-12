@@ -104,7 +104,7 @@ export default function HomePage() {
 
   return (
     <PageTransition>
-      <main className="min-h-screen bg-gray-100 pb-20">
+      <main className="min-h-screen bg-gray-100">
         {/* タブナビゲーション */}
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
           <div className="px-4 py-3">
@@ -323,29 +323,7 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* ボトムナビゲーション */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
-          <div className="flex justify-around py-2">
-            {[
-              { id: 'overview', label: 'ホーム', icon: '🏠' },
-              { id: 'notes', label: 'ノート', icon: '📝' },
-              { id: 'stats', label: '統計', icon: '📊' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
-                  activeTab === tab.id
-                    ? 'text-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
-              >
-                <span className="text-lg">{tab.icon}</span>
-                <span className="text-xs">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+
       </main>
     </PageTransition>
   );

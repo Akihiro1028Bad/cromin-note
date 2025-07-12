@@ -32,8 +32,8 @@ export default function SettingsPage() {
 
   return (
     <PageTransition>
-      <main className="min-h-screen bg-gray-100 pb-20">
-                {/* ヘッダー */}
+      <main className="min-h-screen bg-gray-100">
+        {/* ヘッダー */}
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between mb-3">
@@ -226,35 +226,7 @@ export default function SettingsPage() {
         </div>
 
         {/* ボトムナビゲーション */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
-          <div className="flex justify-around py-2">
-            <button
-              onClick={() => router.push("/home")}
-              className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors text-gray-600 hover:text-blue-600"
-            >
-              <span className="text-lg">🏠</span>
-              <span className="text-xs">ホーム</span>
-            </button>
-            {[
-              { id: 'profile', label: 'プロフィール', icon: '👤' },
-              { id: 'account', label: 'アカウント', icon: '🔐' },
-              { id: 'app', label: 'アプリ', icon: '⚙️' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
-                  activeTab === tab.id
-                    ? 'text-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
-              >
-                <span className="text-lg">{tab.icon}</span>
-                <span className="text-xs">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+
       </main>
     </PageTransition>
   );
