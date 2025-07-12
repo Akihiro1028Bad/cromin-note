@@ -190,10 +190,17 @@ export default function ScoreInput({
             </label>
             <input
               type="number"
-              min="1"
+              inputMode="numeric"
+              min="0"
               max="300"
-              value={matchDuration || ''}
-              onChange={(e) => onMatchDurationChange(Number(e.target.value) || 0)}
+              value={matchDuration}
+              onChange={(e) => {
+                const value = e.target.value;
+                const numValue = value === '' ? 0 : parseInt(value, 10);
+                if (!isNaN(numValue) && numValue >= 0 && numValue <= 300) {
+                  onMatchDurationChange(numValue);
+                }
+              }}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="例: 45"
             />
@@ -227,21 +234,35 @@ export default function ScoreInput({
                   <div className="flex items-center gap-2 flex-1">
                     <input
                       type="number"
+                      inputMode="numeric"
                       min="0"
                       max="21"
                       value={set.myScore}
-                      onChange={(e) => updateSetScore(index, 'myScore', Number(e.target.value) || 0)}
-                      className="w-16 border border-gray-300 rounded-lg px-3 py-2 text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const numValue = value === '' ? 0 : parseInt(value, 10);
+                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 21) {
+                          updateSetScore(index, 'myScore', numValue);
+                        }
+                      }}
+                      className="w-16 border border-gray-300 rounded-lg px-3 py-2 text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                       placeholder="0"
                     />
-                    <span className="text-blue-600 font-bold">-</span>
+                    <span className="text-blue-600 font-bold text-lg">-</span>
                     <input
                       type="number"
+                      inputMode="numeric"
                       min="0"
                       max="21"
                       value={set.opponentScore}
-                      onChange={(e) => updateSetScore(index, 'opponentScore', Number(e.target.value) || 0)}
-                      className="w-16 border border-gray-300 rounded-lg px-3 py-2 text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const numValue = value === '' ? 0 : parseInt(value, 10);
+                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 21) {
+                          updateSetScore(index, 'opponentScore', numValue);
+                        }
+                      }}
+                      className="w-16 border border-gray-300 rounded-lg px-3 py-2 text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                       placeholder="0"
                     />
                   </div>
