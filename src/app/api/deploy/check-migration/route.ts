@@ -4,10 +4,10 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     // データベース接続テスト
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$queryRawUnsafe('SELECT 1');
     
     // マイグレーション履歴を取得
-    const migrations = await prisma.$queryRaw`
+    const migrations = await prisma.$queryRawUnsafe(`
       SELECT 
         version,
         checksum,
@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
         applied_at
       FROM _prisma_migrations 
       ORDER BY applied_at DESC
-    `;
+    `);
     
     // テーブル構造の確認
-    const tables = await prisma.$queryRaw`
+    const tables = await prisma.$queryRawUnsafe(`
       SELECT 
         table_name,
         column_name,
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       WHERE table_schema = 'public' 
       AND table_name LIKE 'cromin_%'
       ORDER BY table_name, ordinal_position
-    `;
+    `);
     
     // 基本的な統計情報
     const stats = await Promise.all([

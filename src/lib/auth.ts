@@ -2,7 +2,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
-import { prisma, withPrisma } from './prisma';
+import { prisma } from './prisma';
+import { withPrisma } from './prismaRetry';
 const JWT_SECRET = 'your-super-secret-jwt-key-change-this-in-production';
 // 動的にAPP_URLを取得する関数
 const getAppUrl = (): string => {

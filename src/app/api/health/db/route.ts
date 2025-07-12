@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const startTime = Date.now();
     
     // データベース接続テスト
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$queryRawUnsafe('SELECT 1');
     
     const responseTime = Date.now() - startTime;
     

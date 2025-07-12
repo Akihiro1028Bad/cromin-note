@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withPrisma } from '@/lib/prismaRetry';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const results = await prisma.result.findMany({
-      orderBy: { id: 'asc' }
+    const results = await withPrisma(async (prisma) => {
+      return await prisma.result.findMany({
+        orderBy: { id: 'asc' }
+      });
     });
 
     return NextResponse.json(

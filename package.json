@@ -15,7 +15,13 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "deploy:migrate": "node scripts/deploy-migrate.js",
-    "migrate:only": "node scripts/migrate-only.js"
+    "migrate:only": "node scripts/migrate-only.js",
+    "vercel-build": "node scripts/vercel-deploy.js",
+    "postinstall": "npx prisma generate",
+    "reset": "node scripts/local-reset.js",
+    "reset:full": "node scripts/local-reset.js && npm run dev",
+    "quick-reset": "./scripts/quick-reset.sh",
+    "reset:auto": "node scripts/reset-with-setup.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
