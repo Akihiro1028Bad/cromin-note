@@ -7,11 +7,7 @@ const path = require('path');
 console.log('🚀 Vercelデプロイスクリプト開始...');
 
 try {
-  // 1. Prismaクライアントの再生成
-  console.log('📦 Prismaクライアントを再生成中...');
-  execSync('npx prisma generate', { stdio: 'inherit' });
-  
-  // 2. キャッシュクリア
+  // 1. キャッシュクリア（最初に実行）
   console.log('🧹 キャッシュをクリア中...');
   
   // .nextディレクトリの削除
@@ -20,6 +16,10 @@ try {
     fs.rmSync(nextDir, { recursive: true, force: true });
     console.log('✅ .nextディレクトリを削除しました');
   }
+  
+  // 2. Prismaクライアントの再生成
+  console.log('📦 Prismaクライアントを再生成中...');
+  execSync('npx prisma generate', { stdio: 'inherit' });
   
   // node_modules/.cacheディレクトリの削除
   const cacheDir = path.join(process.cwd(), 'node_modules', '.cache');
