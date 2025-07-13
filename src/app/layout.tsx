@@ -22,11 +22,14 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/icon-192x192.png", type: "image/png", sizes: "192x192" },
+      { url: "/favicon.ico", type: "image/x-icon" },
       { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/next.svg", type: "image/svg+xml" }
     ],
     apple: [
-      { url: "/icon.svg", type: "image/svg+xml" }
+      { url: "/apple-touch-icon.png", type: "image/png", sizes: "180x180" }
     ]
   },
   appleWebApp: {

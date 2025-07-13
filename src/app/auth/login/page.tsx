@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageTransition, LoadingSpinner, Button } from '@/components';
 import { useAuth } from '@/hooks';
+import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -111,7 +112,7 @@ export default function LoginPage() {
           <div className="max-w-sm mx-auto">
             {/* アイコン */}
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4">🏓</div>
+              <Image src="/icon.png" alt="卓球アイコン" width={96} height={96} className="mx-auto mb-4" />
               <h2 className="text-xl font-bold text-gray-900 mb-2">Cromin Note</h2>
               <p className="text-gray-600">アカウントにログインしてください</p>
             </div>

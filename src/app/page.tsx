@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PageTransition, Button } from '@/components';
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -35,7 +36,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-3">
-                <div className="text-2xl animate-bounce">🏓</div>
+                <Image src="/icon.png" alt="卓球アイコン" width={48} height={48} className="animate-bounce" />
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Cromin Note
                 </h1>
@@ -68,7 +69,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             {/* メインアイコン */}
             <div className="relative mb-12">
-              <div className="text-8xl animate-bounce">🏓</div>
+              <Image src="/icon.png" alt="卓球アイコン" width={160} height={160} className="mx-auto animate-bounce" />
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full blur-3xl opacity-20 animate-pulse"></div>
             </div>
             
@@ -275,7 +276,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center space-x-3 mb-4 md:mb-0">
-                <div className="text-2xl">🏓</div>
+                <Image src="/icon.png" alt="卓球アイコン" width={48} height={48} />
                 <h3 className="text-xl font-bold">Cromin Note</h3>
               </div>
               <div className="text-gray-400 text-sm">
