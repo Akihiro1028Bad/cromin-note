@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PageTransition, Button, LoadingSpinner } from '@/components';
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface Note {
   id: string;

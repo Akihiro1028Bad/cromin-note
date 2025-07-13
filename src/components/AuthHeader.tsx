@@ -2,6 +2,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 
 export default function AuthHeader() {
   // すべてのHooksを最初に呼び出す
@@ -79,6 +80,7 @@ export default function AuthHeader() {
         <div className="flex items-center justify-between">
           {/* ロゴ・タイトル */}
           <div className="flex items-center">
+            <Image src="/icon.png" alt="卓球アイコン" width={40} height={40} className="mr-2" />
             <button
               onClick={() => router.push("/home")}
               className="text-xl font-bold text-text-primary hover:text-primary transition-colors duration-200"

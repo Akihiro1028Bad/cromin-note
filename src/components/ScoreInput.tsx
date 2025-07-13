@@ -131,16 +131,16 @@ export default function ScoreInput({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* セット数選択 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <label className="block text-lg font-semibold text-gray-900 mb-4">
           セット数
         </label>
         <select
           value={totalSets}
           onChange={(e) => onTotalSetsChange(Number(e.target.value))}
-          className={`w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          className={`w-full border-2 rounded-lg px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
             totalSets === 0 ? 'border-red-300 bg-red-50' : 'border-gray-300'
           }`}
         >
@@ -154,8 +154,8 @@ export default function ScoreInput({
       </div>
 
       {/* 試合時間 */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <label className="block text-lg font-semibold text-gray-900 mb-4">
           試合時間（分）
         </label>
         <input
@@ -171,23 +171,23 @@ export default function ScoreInput({
               onMatchDurationChange(numValue);
             }
           }}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full border-2 border-gray-300 rounded-lg px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           placeholder="例: 45"
         />
       </div>
 
       {/* スコア入力 */}
       {totalSets > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <label className="text-lg font-medium text-gray-700">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
               各セットのスコア
-            </label>
+            </h3>
             <button
               type="button"
               onClick={addSet}
               disabled={scoreData.length >= totalSets}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-xl text-base font-semibold transition-all duration-200 disabled:opacity-50 active:scale-95"
             >
               セット追加
             </button>
@@ -200,21 +200,21 @@ export default function ScoreInput({
             return (
               <div
                 key={index}
-                className={`border rounded-lg p-3 shadow-sm ${
+                className={`bg-white rounded-xl p-6 shadow-sm border-2 transition-all duration-200 ${
                   isUnfilled 
-                    ? 'bg-red-50 border-red-200' 
-                    : 'bg-white border-gray-200'
+                    ? 'border-red-200 bg-red-50' 
+                    : 'border-gray-200'
                 }`}
               >
                 {/* セット番号と削除ボタン */}
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-lg font-bold text-blue-600">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xl font-bold text-blue-600">
                     {set.setNumber}セット
                   </span>
                   <button
                     type="button"
                     onClick={() => removeSet(index)}
-                    className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95"
                   >
                     削除
                   </button>
@@ -224,7 +224,7 @@ export default function ScoreInput({
                 <div className="flex items-center justify-center gap-4">
                   {/* 自分のスコア */}
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">自分のスコア</label>
+                    <label className="block text-base font-medium text-gray-700 mb-2 text-center">自分のスコア</label>
                     <select
                       value={set.myScore}
                       onChange={(e) => updateSetScore(index, 'myScore', Number(e.target.value))}
@@ -240,12 +240,12 @@ export default function ScoreInput({
 
                   {/* VS */}
                   <div className="flex items-center justify-center">
-                    <span className="text-lg font-bold text-gray-500">VS</span>
+                    <span className="text-xl font-bold text-gray-500">VS</span>
                   </div>
 
                   {/* 相手のスコア */}
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">相手のスコア</label>
+                    <label className="block text-base font-medium text-gray-700 mb-2 text-center">相手のスコア</label>
                     <select
                       value={set.opponentScore}
                       onChange={(e) => updateSetScore(index, 'opponentScore', Number(e.target.value))}
@@ -262,20 +262,20 @@ export default function ScoreInput({
 
                 {/* セット結果表示 */}
                 {set.myScore > 0 || set.opponentScore > 0 ? (
-                  <div className="mt-3 text-center">
-                    <span className={`text-sm font-semibold ${
+                  <div className="mt-4 text-center">
+                    <span className={`text-base font-semibold px-4 py-2 rounded-lg ${
                       set.myScore > set.opponentScore 
-                        ? 'text-green-600' 
+                        ? 'text-green-600 bg-green-50' 
                         : set.myScore < set.opponentScore 
-                        ? 'text-red-600' 
-                        : 'text-gray-600'
+                        ? 'text-red-600 bg-red-50' 
+                        : 'text-gray-600 bg-gray-50'
                     }`}>
                       {set.myScore > set.opponentScore ? '勝利' : set.myScore < set.opponentScore ? '敗戦' : '引き分け'}
                     </span>
                   </div>
                 ) : (
-                  <div className="mt-3 text-center">
-                    <span className="text-sm text-gray-400">未入力</span>
+                  <div className="mt-4 text-center">
+                    <span className="text-base text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">未入力</span>
                   </div>
                 )}
               </div>
@@ -284,29 +284,29 @@ export default function ScoreInput({
 
           {/* 試合結果サマリー */}
           {scoreData.length > 0 && (
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">試合結果</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">スコア: </span>
-                  <span className="font-semibold text-gray-800">{formatScore(scoreData)}</span>
+            <div className="bg-blue-50 rounded-xl p-6 border-2 border-blue-200">
+              <h4 className="text-lg font-semibold text-blue-900 mb-4">試合結果</h4>
+              <div className="grid grid-cols-1 gap-3 text-base">
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-700">スコア:</span>
+                  <span className="font-semibold text-blue-900">{formatScore(scoreData)}</span>
                 </div>
-                <div>
-                  <span className="text-gray-600">結果: </span>
-                  <span className={`font-semibold ${
-                    getMatchResult() === '勝利' ? 'text-green-600' : 
-                    getMatchResult() === '敗戦' ? 'text-red-600' : 'text-gray-600'
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-700">結果:</span>
+                  <span className={`font-semibold px-3 py-1 rounded-lg ${
+                    getMatchResult() === '勝利' ? 'text-green-600 bg-green-100' : 
+                    getMatchResult() === '敗戦' ? 'text-red-600 bg-red-100' : 'text-gray-600 bg-gray-100'
                   }`}>
                     {getMatchResult()}
                   </span>
                 </div>
-                <div>
-                  <span className="text-gray-600">獲得セット: </span>
-                  <span className="font-semibold text-gray-800">{calculateWonSets()}/{scoreData.length}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-700">獲得セット:</span>
+                  <span className="font-semibold text-blue-900">{calculateWonSets()}/{scoreData.length}</span>
                 </div>
-                <div>
-                  <span className="text-gray-600">試合時間: </span>
-                  <span className="font-semibold text-gray-800">{matchDuration}分</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-700">試合時間:</span>
+                  <span className="font-semibold text-blue-900">{matchDuration}分</span>
                 </div>
               </div>
             </div>
