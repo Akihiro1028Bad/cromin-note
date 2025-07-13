@@ -42,10 +42,14 @@ export default function CategorySelect({ value, onChange, required = false, disa
   if (loading) {
     return (
       <div className="w-full">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-lg font-semibold text-gray-900 mb-4">
           カテゴリ {required && <span className="text-red-500">*</span>}
         </label>
-        <div className="animate-pulse bg-gray-200 h-10 rounded-md"></div>
+        <div className="grid grid-cols-2 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="animate-pulse bg-gray-200 h-16 rounded-lg"></div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -53,39 +57,40 @@ export default function CategorySelect({ value, onChange, required = false, disa
   if (error) {
     return (
       <div className="w-full">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-lg font-semibold text-gray-900 mb-4">
           カテゴリ {required && <span className="text-red-500">*</span>}
         </label>
-        <div className="text-red-500 text-sm">{error}</div>
+        <div className="text-red-500 text-base p-4 bg-red-50 rounded-lg border border-red-200">{error}</div>
       </div>
     )
   }
 
   return (
     <div className="w-full">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-lg font-semibold text-gray-900 mb-4">
         カテゴリ {required && <span className="text-red-500">*</span>}
       </label>
-      <select
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-        disabled={disabled}
-        required={required}
-        className={`
-          w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-          ${disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-900'}
-          ${!value && required ? 'border-red-300 bg-red-50' : 'border-gray-300'}
-        `}
-      >
-        <option value="">カテゴリを選択してください</option>
+      <div className="grid grid-cols-2 gap-3">
         {categories.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.name}
-          </option>
+          <button
+            key={category.id}
+            type="button"
+            onClick={() => onChange(category.id)}
+            disabled={disabled}
+            className={`p-4 text-center rounded-lg border-2 transition-all duration-200 active:scale-95 ${
+              value === category.id
+                ? 'border-blue-500 bg-blue-50 text-blue-900'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+            } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <div className="font-medium">{category.name}</div>
+          </button>
         ))}
-      </select>
+      </div>
       {!value && required && (
-        <p className="mt-1 text-sm text-red-600">カテゴリを選択してください</p>
+        <p className="mt-3 text-base text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+          カテゴリを選択してください
+        </p>
       )}
     </div>
   )

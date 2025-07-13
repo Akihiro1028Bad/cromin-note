@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { NoteType, Result } from "@/types/database";
 import { PageTransition, LoadingSpinner, ScoreInput, Button, OpponentSelect, CategorySelect } from '@/components';
+import Image from "next/image";
 
 // スコアセット型
 interface ScoreSet {
@@ -16,7 +17,11 @@ export default function NewNotePage() {
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
 
   // フォーム状態
   const [typeId, setTypeId] = useState<number | ''>('');
@@ -36,9 +41,71 @@ export default function NewNotePage() {
   const [wonSets, setWonSets] = useState(0);
   const [matchDuration, setMatchDuration] = useState(0);
 
+  const selectedType = noteTypes.find(t => t.id === typeId);
+  const selectedCategory = categories.find(c => c.id === categoryId);
+
+  // 種別に応じたステップ定義
+  const getSteps = () => {
+    const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
+    
+    if (isGameOrMatch) {
+      return [
+        { id: 0, title: '基本情報', icon: '📝' },
+        { id: 1, title: '対戦情報', icon: <Image src="/icon.png" alt="クロスミントンアイコン" width={24} height={24} style={{display:'inline',verticalAlign:'middle'}} /> },
+        { id: 2, title: '詳細記録', icon: '📊' },
+        { id: 3, title: '設定', icon: '⚙️' }
+      ];
+    } else {
+      return [
+        { id: 0, title: '基本情報', icon: '📝' },
+        { id: 1, title: '詳細記録', icon: '📊' },
+        { id: 2, title: '設定', icon: '⚙️' }
+      ];
+    }
+  };
+
+  const steps = getSteps();
+
+  // 現在のステップを種別に応じて調整
+  const adjustCurrentStep = (newTypeId: number) => {
+    const newType = noteTypes.find(t => t.id === newTypeId);
+    const isGameOrMatch = newType?.name === 'ゲーム練習' || newType?.name === '公式試合';
+    
+    if (!isGameOrMatch && currentStep >= 1) {
+      // 練習系の場合は対戦情報ステップをスキップ
+      setCurrentStep(Math.max(0, currentStep - 1));
+    }
+  };
+
   useEffect(() => {
     fetchMasterData();
   }, []);
+
+  // スワイプナビゲーション
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else if (isRightSwipe && currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
 
   const fetchMasterData = async () => {
     try {
@@ -127,9 +194,6 @@ export default function NewNotePage() {
     }
   };
 
-  const selectedType = noteTypes.find(t => t.id === typeId);
-  const selectedCategory = categories.find(c => c.id === categoryId);
-
   // デバッグ用ログ
   console.log('Current noteTypes:', noteTypes);
   console.log('Current typeId:', typeId);
@@ -158,248 +222,347 @@ export default function NewNotePage() {
     return opponentIds.length >= 1;
   };
 
+  // 進捗計算
+  const progressData = (() => {
+    const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
+    const total = isGameOrMatch ? 5 : 2;
+    
+    const requiredItems = isGameOrMatch 
+      ? [
+          typeId,
+          title.trim(),
+          categoryId,
+          isValidOpponent(opponentIds, selectedType?.name || ''),
+          isValidScoreData(scoreData)
+        ]
+      : [
+          typeId,
+          title.trim()
+        ];
+    
+    const completed = requiredItems.filter(Boolean).length;
+    return { completed, total, percentage: (completed / total) * 100 };
+  })();
+
+  // 種別選択時の処理
+  const handleTypeSelect = (newTypeId: number) => {
+    setTypeId(newTypeId);
+    adjustCurrentStep(newTypeId);
+  };
+
   if (loading) return <LoadingSpinner size="lg" className="min-h-screen" />;
 
   return (
     <PageTransition>
-      <main className="min-h-screen bg-gray-100 pb-24">
+      <main 
+        className="min-h-screen bg-gray-50 pb-32"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* ヘッダー */}
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-          <div className="px-4 py-3">
-            <div className="flex items-center">
+          <div className="px-4 py-4">
+            <div className="flex items-center justify-between">
               <button
                 onClick={() => router.back()}
-                className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="p-3 text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100 active:bg-gray-200"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <h1 className="text-lg font-bold text-gray-900 ml-2">ノート投稿</h1>
+              <h1 className="text-lg font-bold text-gray-900">ノート投稿</h1>
+              <div className="w-12"></div> {/* 中央寄せのためのスペーサー */}
             </div>
+          </div>
+        </div>
+
+        {/* ステップインジケーター */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <div 
+                  className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all duration-200 ${
+                    currentStep >= step.id 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  {step.icon}
+                </div>
+                {index < steps.length - 1 && (
+                  <div 
+                    className={`w-8 h-0.5 mx-2 transition-all duration-200 ${
+                      currentStep > step.id ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-2">
+            <span className="text-sm font-medium text-gray-700">
+              {steps[currentStep].title}
+            </span>
           </div>
         </div>
 
         {/* メインコンテンツ */}
-        <div className="px-4 py-4">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 種別選択 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                種別 <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={typeId}
-                onChange={(e) => setTypeId(Number(e.target.value))}
-                className={`w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  !typeId ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                required
-              >
-                <option value="">種別を選択</option>
-                {noteTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-              {noteTypes.length === 0 && (
-                <p className="mt-1 text-sm text-red-600">種別データが読み込まれていません</p>
-              )}
-            </div>
-
-            {/* タイトル */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                タイトル <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="タイトルを入力"
-                className={`w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  !title.trim() ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                required
-              />
-            </div>
-
-            {/* カテゴリ選択（ゲーム練習・公式試合のみ・必須） */}
-            {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
-              <CategorySelect
-                value={categoryId}
-                onChange={setCategoryId}
-                required={true}
-              />
-            )}
-
-            {/* 対戦相手（ゲーム練習・公式試合のみ・必須） */}
-            {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
-              <OpponentSelect
-                value={opponentIds}
-                onChange={setOpponentIds}
-                category={selectedCategory?.name || ''}
-                isRequired={true}
-              />
-            )}
-
-            {/* スコア入力（ゲーム練習・公式試合のみ・必須） */}
-            {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-sm font-medium text-gray-700">スコア記録</h3>
-                  <span className="text-red-500 text-sm">*</span>
+        <div className="px-4 py-6">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* ステップ0: 基本情報 */}
+            {currentStep === 0 && (
+              <div className="space-y-6">
+                {/* 種別選択 */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                    種別 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {noteTypes.map((type) => (
+                      <button
+                        key={type.id}
+                        type="button"
+                        onClick={() => handleTypeSelect(type.id)}
+                        className={`p-4 text-left rounded-lg border-2 transition-all duration-200 active:scale-95 ${
+                          typeId === type.id
+                            ? 'border-blue-500 bg-blue-50 text-blue-900'
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="font-medium">{type.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {noteTypes.length === 0 && (
+                    <p className="mt-3 text-sm text-red-600">種別データが読み込まれていません</p>
+                  )}
                 </div>
-                <ScoreInput
-                  scoreData={scoreData}
-                  onScoreChange={setScoreData}
-                  totalSets={totalSets}
-                  onTotalSetsChange={setTotalSets}
-                  matchDuration={matchDuration}
-                  onMatchDurationChange={setMatchDuration}
-                />
-              </div>
-            )}
 
-            {/* 内容 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                内容
-              </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="練習内容や試合の詳細を記録"
-                rows={4}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-            </div>
-
-            {/* メモ */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                メモ
-              </label>
-              <textarea
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                placeholder="追加のメモがあれば記録"
-                rows={3}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-            </div>
-
-            {/* 体調 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                体調
-              </label>
-              <input
-                type="text"
-                value={condition}
-                onChange={(e) => setCondition(e.target.value)}
-                placeholder="体調やコンディションを記録"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* 公開設定 */}
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-gray-900">公開設定</h3>
-                  <p className="text-sm text-gray-600">他のプレイヤーに公開するかどうか</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+                {/* タイトル */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                    タイトル <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={isPublic}
-                    onChange={(e) => setIsPublic(e.target.checked)}
-                    className="sr-only peer"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="タイトルを入力"
+                    className={`w-full border-2 rounded-lg px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      !title.trim() ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
+                    required
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* ステップ1: 対戦情報（ゲーム練習・公式試合のみ） */}
+            {currentStep === 1 && (selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
+              <div className="space-y-6">
+                {/* カテゴリ選択 */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <CategorySelect
+                    value={categoryId}
+                    onChange={setCategoryId}
+                    required={true}
+                  />
+                </div>
+
+                {/* 対戦相手 */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <OpponentSelect
+                    value={opponentIds}
+                    onChange={setOpponentIds}
+                    category={selectedCategory?.name || ''}
+                    isRequired={true}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ステップ1: 詳細記録（練習系の場合）または ステップ2: 詳細記録（ゲーム練習・公式試合の場合） */}
+            {((currentStep === 1 && !(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合')) || 
+              (currentStep === 2 && (selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合'))) && (
+              <div className="space-y-6">
+                {/* スコア入力（ゲーム練習・公式試合のみ・必須） */}
+                {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                    <div className="flex items-center gap-2 mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">スコア記録</h3>
+                      <span className="text-red-500 text-lg">*</span>
+                    </div>
+                    <ScoreInput
+                      scoreData={scoreData}
+                      onScoreChange={setScoreData}
+                      totalSets={totalSets}
+                      onTotalSetsChange={setTotalSets}
+                      matchDuration={matchDuration}
+                      onMatchDurationChange={setMatchDuration}
+                    />
+                  </div>
+                )}
+
+                {/* 内容 */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                    内容
+                  </label>
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="練習内容や試合の詳細を記録"
+                    rows={6}
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
+                  />
+                </div>
+
+                {/* メモ */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                    メモ
+                  </label>
+                  <textarea
+                    value={memo}
+                    onChange={(e) => setMemo(e.target.value)}
+                    placeholder="追加のメモがあれば記録"
+                    rows={4}
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
+                  />
+                </div>
+
+                {/* 体調 */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                    体調
+                  </label>
+                  <input
+                    type="text"
+                    value={condition}
+                    onChange={(e) => setCondition(e.target.value)}
+                    placeholder="体調やコンディションを記録"
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ステップ2: 設定（練習系の場合）または ステップ3: 設定（ゲーム練習・公式試合の場合） */}
+            {((currentStep === 2 && !(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合')) || 
+              (currentStep === 3 && (selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合'))) && (
+              <div className="space-y-6">
+                {/* 公開設定 */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">公開設定</h3>
+                      <p className="text-sm text-gray-600 mt-1">他のプレイヤーに公開するかどうか</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isPublic}
+                        onChange={(e) => setIsPublic(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 非表示の必須フィールド（バリデーション用） */}
+            <select
+              value={typeId}
+              onChange={(e) => setTypeId(Number(e.target.value))}
+              className="hidden"
+              required
+            >
+              <option value="">種別を選択</option>
+              {noteTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
           </form>
         </div>
 
-        {/* 固定フッター */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
-          <div className="px-4 py-4">
-            {/* 必須項目進捗バー */}
-            {!submitting && (
-              <div className="mb-3">
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>必須項目</span>
-                  <span>
-                    {(() => {
-                      const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
-                      const total = isGameOrMatch ? 5 : 2;
-                      
-                      // 種別に応じて実際に必要な項目のみを配列に含める
-                      const requiredItems = isGameOrMatch 
-                        ? [
-                            typeId,
-                            title.trim(),
-                            categoryId,
-                            isValidOpponent(opponentIds, selectedType?.name || ''),
-                            isValidScoreData(scoreData)
-                          ]
-                        : [
-                            typeId,
-                            title.trim()
-                          ];
-                      
-                      const completed = requiredItems.filter(Boolean).length;
-                      return `${completed}/${total}`;
-                    })()}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${(() => {
-                        const isGameOrMatch = selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合';
-                        const total = isGameOrMatch ? 5 : 2;
-                        
-                        // 種別に応じて実際に必要な項目のみを配列に含める
-                        const requiredItems = isGameOrMatch 
-                          ? [
-                              typeId,
-                              title.trim(),
-                              categoryId,
-                              isValidOpponent(opponentIds, selectedType?.name || ''),
-                              isValidScoreData(scoreData)
-                            ]
-                          : [
-                              typeId,
-                              title.trim()
-                            ];
-                        
-                        const completed = requiredItems.filter(Boolean).length;
-                        return (completed / total) * 100;
-                      })()}%`
-                    }}
-                  ></div>
-                </div>
-              </div>
+        {/* ナビゲーションボタン */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20 px-4 py-4">
+          <div className="flex gap-3">
+            {currentStep > 0 && (
+              <button
+                onClick={() => setCurrentStep(currentStep - 1)}
+                className="flex-1 bg-gray-100 text-gray-700 py-4 px-6 rounded-xl font-medium transition-all duration-200 active:bg-gray-200"
+              >
+                戻る
+              </button>
             )}
-            
-            {/* 投稿ボタン */}
-            <Button
-              color="blue"
-              size="lg"
-              onClick={() => handleSubmit(new Event('submit') as any)}
-              disabled={submitting || !typeId || !title.trim() || 
-                ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponentIds, selectedType.name) || !categoryId))}
-              className="w-full"
-            >
-              {submitting ? '投稿中...' : '投稿'}
-            </Button>
+            {currentStep < steps.length - 1 ? (
+              <button
+                onClick={() => setCurrentStep(currentStep + 1)}
+                className="flex-1 bg-blue-600 text-white py-4 px-6 rounded-xl font-medium transition-all duration-200 active:bg-blue-700"
+              >
+                次へ
+              </button>
+            ) : (
+              <Button
+                color="blue"
+                size="lg"
+                onClick={() => handleSubmit(new Event('submit') as any)}
+                disabled={submitting || !typeId || !title.trim() || 
+                  ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponentIds, selectedType.name) || !categoryId))}
+                className="flex-1"
+              >
+                {submitting ? '投稿中...' : '投稿'}
+              </Button>
+            )}
           </div>
+          
+          {/* 進捗バー */}
+          {!submitting && (
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>必須項目</span>
+                <span>{progressData.completed}/{progressData.total}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progressData.percentage}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* フローティングアクションボタン */}
+        <div className="fixed bottom-24 right-4 z-30">
+          <button
+            onClick={() => handleSubmit(new Event('submit') as any)}
+            disabled={submitting || !typeId || !title.trim() || 
+              ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponentIds, selectedType.name) || !categoryId))}
+            className={`w-14 h-14 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center ${
+              submitting || !typeId || !title.trim() || 
+              ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponentIds, selectedType.name) || !categoryId))
+                ? 'bg-gray-300 text-gray-500'
+                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+            }`}
+          >
+            {submitting ? (
+              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            )}
+          </button>
         </div>
       </main>
     </PageTransition>
