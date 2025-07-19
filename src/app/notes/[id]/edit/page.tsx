@@ -103,8 +103,8 @@ export default function EditNotePage() {
     if (!touchStart || !touchEnd) return;
     
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
+    const isLeftSwipe = distance > 30; // 感度を上げる（50から30に変更）
+    const isRightSwipe = distance < -30; // 感度を上げる（-50から-30に変更）
 
     if (isLeftSwipe && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -191,6 +191,9 @@ export default function EditNotePage() {
     fetchData();
   }, [noteId, router]);
 
+  // リアルタイムバリデーション
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
   // バリデーション関数
   const isValidScoreData = (scores: ScoreSet[]): boolean => {
     if (scores.length === 0) return false;
@@ -206,6 +209,35 @@ export default function EditNotePage() {
     }
     
     return opponentIds.length >= 1;
+  };
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!typeId) {
+      newErrors.typeId = '種別を選択してください';
+    }
+
+    if (!title.trim()) {
+      newErrors.title = 'タイトルを入力してください';
+    }
+
+    if (selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') {
+      if (!categoryId) {
+        newErrors.categoryId = 'カテゴリを選択してください';
+      }
+
+      if (!isValidOpponent(opponentIds, selectedCategory?.name || '')) {
+        newErrors.opponentIds = '対戦相手を入力してください';
+      }
+
+      if (!isValidScoreData(scoreData)) {
+        newErrors.scoreData = 'スコアを入力してください';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   // 進捗計算をメモ化
@@ -238,25 +270,24 @@ export default function EditNotePage() {
     selectedCategory?.name
   ]);
 
+  // リアルタイムバリデーション
+  useEffect(() => {
+    if (typeId || title.trim()) {
+      validateForm();
+    }
+  }, [typeId, title, categoryId, opponentIds, scoreData, selectedType, selectedCategory]);
+
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!typeId || !note || !title.trim()) return;
     
-    // ゲーム練習・公式試合の場合はスコアと対戦相手が必須
-    if (selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') {
-      if (!isValidScoreData(scoreData)) {
-        alert('スコアを入力してください。');
-        return;
+    if (!validateForm()) {
+      // エラーメッセージを表示
+      const errorMessages = Object.values(errors);
+      if (errorMessages.length > 0) {
+        alert(`入力内容に問題があります：\n${errorMessages.join('\n')}`);
       }
-      if (!isValidOpponent(opponentIds, selectedCategory?.name || '')) {
-        alert('対戦相手を入力してください。');
-        return;
-      }
-      if (!categoryId) {
-        alert('カテゴリを選択してください。');
-        return;
-      }
+      return;
     }
 
     setSubmitting(true);
@@ -415,15 +446,15 @@ export default function EditNotePage() {
         </div>
 
         {/* メインコンテンツ */}
-        <div className="px-4 py-6">
-          <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+        <div className="px-4 py-4">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
             
             {/* ステップ0: 基本情報 */}
             {currentStep === 0 && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* 種別選択 */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <label className="block text-base font-semibold text-gray-900 mb-3">
                     種別 <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-1 gap-3">
@@ -432,7 +463,7 @@ export default function EditNotePage() {
                         key={type.id}
                         type="button"
                         onClick={() => handleTypeSelect(type.id)}
-                        className={`p-4 text-left rounded-lg border-2 transition-all duration-200 active:scale-95 ${
+                        className={`p-4 text-left rounded-lg border-2 transition-all duration-200 active:scale-95 min-h-[56px] flex items-center ${
                           typeId === type.id
                             ? 'border-blue-500 bg-blue-50 text-blue-900'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
@@ -445,8 +476,8 @@ export default function EditNotePage() {
                 </div>
 
                 {/* タイトル */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <label className="block text-base font-semibold text-gray-900 mb-3">
                     タイトル <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -454,35 +485,38 @@ export default function EditNotePage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="タイトルを入力"
-                    className={`w-full border-2 rounded-lg px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                      !title.trim() ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    className={`w-full border-2 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      errors.title ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
                     required
                   />
+                  {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
                 </div>
               </div>
             )}
 
             {/* ステップ1: 対戦情報（ゲーム練習・公式試合のみ） */}
             {currentStep === 1 && (selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* カテゴリ選択 */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                   <CategorySelect
                     value={categoryId}
                     onChange={setCategoryId}
                     required={true}
                   />
+                  {errors.categoryId && <p className="mt-1 text-sm text-red-600">{errors.categoryId}</p>}
                 </div>
 
                 {/* 対戦相手 */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                   <OpponentSelect
                     value={opponentIds}
                     onChange={setOpponentIds}
                     category={selectedCategory?.name || ''}
                     isRequired={true}
                   />
+                  {errors.opponentIds && <p className="mt-1 text-sm text-red-600">{errors.opponentIds}</p>}
                 </div>
               </div>
             )}
@@ -490,13 +524,13 @@ export default function EditNotePage() {
             {/* ステップ1: 詳細記録（練習系の場合）または ステップ2: 詳細記録（ゲーム練習・公式試合の場合） */}
             {((currentStep === 1 && !(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合')) || 
               (currentStep === 2 && (selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合'))) && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* スコア入力（ゲーム練習・公式試合のみ・必須） */}
                 {(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (
-                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <div className="flex items-center gap-2 mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">スコア記録</h3>
-                      <span className="text-red-500 text-lg">*</span>
+                  <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-base font-semibold text-gray-900">スコア記録</h3>
+                      <span className="text-red-500 text-base">*</span>
                     </div>
                     <ScoreInput
                       scoreData={scoreData}
@@ -506,26 +540,27 @@ export default function EditNotePage() {
                       matchDuration={matchDuration}
                       onMatchDurationChange={setMatchDuration}
                     />
+                    {errors.scoreData && <p className="mt-1 text-sm text-red-600">{errors.scoreData}</p>}
                   </div>
                 )}
 
                 {/* 内容 */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <label className="block text-base font-semibold text-gray-900 mb-3">
                     内容
                   </label>
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="練習内容や試合の詳細を記録"
-                    rows={6}
-                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
+                    rows={5}
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
                   />
                 </div>
 
                 {/* メモ */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <label className="block text-base font-semibold text-gray-900 mb-3">
                     メモ
                   </label>
                   <textarea
@@ -533,13 +568,13 @@ export default function EditNotePage() {
                     onChange={(e) => setMemo(e.target.value)}
                     placeholder="追加のメモがあれば記録"
                     rows={4}
-                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
                   />
                 </div>
 
                 {/* 体調 */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                  <label className="block text-lg font-semibold text-gray-900 mb-4">
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <label className="block text-base font-semibold text-gray-900 mb-3">
                     体調
                   </label>
                   <input
@@ -547,7 +582,7 @@ export default function EditNotePage() {
                     value={condition}
                     onChange={(e) => setCondition(e.target.value)}
                     placeholder="体調やコンディションを記録"
-                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
@@ -556,12 +591,12 @@ export default function EditNotePage() {
             {/* ステップ2: 設定（練習系の場合）または ステップ3: 設定（ゲーム練習・公式試合の場合） */}
             {((currentStep === 2 && !(selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合')) || 
               (currentStep === 3 && (selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合'))) && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* 公開設定 */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">公開設定</h3>
+                      <h3 className="text-base font-semibold text-gray-900">公開設定</h3>
                       <p className="text-sm text-gray-600 mt-1">他のプレイヤーに公開するかどうか</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -601,7 +636,7 @@ export default function EditNotePage() {
             {currentStep > 0 && (
               <button
                 onClick={() => setCurrentStep(currentStep - 1)}
-                className="flex-1 bg-gray-100 text-gray-700 py-4 px-6 rounded-xl font-medium transition-all duration-200 active:bg-gray-200"
+                className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-all duration-200 active:bg-gray-200 min-h-[48px]"
               >
                 戻る
               </button>
@@ -609,7 +644,7 @@ export default function EditNotePage() {
             {currentStep < steps.length - 1 ? (
               <button
                 onClick={() => setCurrentStep(currentStep + 1)}
-                className="flex-1 bg-blue-600 text-white py-4 px-6 rounded-xl font-medium transition-all duration-200 active:bg-blue-700"
+                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 active:bg-blue-700 min-h-[48px]"
               >
                 次へ
               </button>
@@ -620,7 +655,7 @@ export default function EditNotePage() {
                 onClick={() => handleSubmit(new Event('submit') as any)}
                 disabled={submitting || !typeId || !title.trim() || 
                   ((selectedType?.name === 'ゲーム練習' || selectedType?.name === '公式試合') && (!isValidScoreData(scoreData) || !isValidOpponent(opponentIds, selectedCategory?.name || '') || !categoryId))}
-                className="flex-1"
+                className="flex-1 min-h-[48px]"
               >
                 {submitting ? '更新中...' : '更新'}
               </Button>
@@ -645,7 +680,7 @@ export default function EditNotePage() {
         </div>
 
         {/* フローティングアクションボタン */}
-        <div className="fixed bottom-24 right-4 z-30">
+        <div className="fixed bottom-20 right-4 z-30">
           <button
             onClick={() => handleSubmit(new Event('submit') as any)}
             disabled={submitting || !typeId || !title.trim() || 
