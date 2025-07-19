@@ -25,6 +25,13 @@ if (missingEnvVars.length > 0) {
 
 console.log('✅ 必要な環境変数が設定されています');
 
+// デバッグ情報の出力（パスワードは隠す）
+console.log('🔍 デバッグ情報:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('DATABASE_URL format:', process.env.DATABASE_URL?.replace(/:[^:@]*@/, ':****@'));
+console.log('DIRECT_URL format:', process.env.DIRECT_URL?.replace(/:[^:@]*@/, ':****@'));
+console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+
 try {
   // 1. キャッシュクリア（最初に実行）
   console.log('🧹 キャッシュをクリア中...');
@@ -44,7 +51,13 @@ try {
   console.log('🔗 データベース接続をテスト中...');
   try {
     const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: process.env.DIRECT_URL
+        }
+      }
+    });
     await prisma.$connect();
     console.log('✅ データベース接続成功');
     await prisma.$disconnect();
@@ -56,7 +69,21 @@ try {
   // 4. データベースマイグレーション実行
   console.log('🗄️ データベースマイグレーションを実行中...');
   try {
-    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+    // マイグレーション時はDIRECT_URLを使用
+    const migrationEnv = {
+      ...process.env,
+      DATABASE_URL: process.env.DIRECT_URL,
+      NODE_ENV: 'production'
+    };
+    
+    console.log('📋 マイグレーション環境変数:');
+    console.log('DATABASE_URL (migration):', migrationEnv.DATABASE_URL?.replace(/:[^:@]*@/, ':****@'));
+    console.log('NODE_ENV (migration):', migrationEnv.NODE_ENV);
+    
+    execSync('npx prisma migrate deploy', { 
+      stdio: 'inherit',
+      env: migrationEnv
+    });
     console.log('✅ マイグレーションが完了しました');
   } catch (error) {
     console.error('❌ マイグレーションでエラーが発生しました:', error.message);
@@ -66,7 +93,16 @@ try {
   // 5. 不正データのクリーンアップ（必要に応じて）
   console.log('🧹 不正データをクリーンアップ中...');
   try {
-    execSync('npx prisma db execute --file prisma/cleanup-null-opponents.sql', { stdio: 'inherit' });
+    const cleanupEnv = {
+      ...process.env,
+      DATABASE_URL: process.env.DIRECT_URL,
+      NODE_ENV: 'production'
+    };
+    
+    execSync('npx prisma db execute --file prisma/cleanup-null-opponents.sql', { 
+      stdio: 'inherit',
+      env: cleanupEnv
+    });
     console.log('✅ データクリーンアップが完了しました');
   } catch (error) {
     console.log('⚠️ データクリーンアップに失敗しました（初回デプロイ時は正常です）');
