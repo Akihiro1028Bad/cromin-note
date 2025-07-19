@@ -26,21 +26,20 @@ Object.entries(envVars).forEach(([key, value]) => {
 // データベース接続テスト
 console.log('\n🗄️ データベース接続テスト:');
 if (process.env.DATABASE_URL) {
-  const { PrismaClient } = require('@prisma/client');
-  const prisma = new PrismaClient();
-  
-  prisma.$connect()
-    .then(() => {
-      console.log('✅ データベース接続成功');
-      return prisma.$disconnect();
-    })
-    .catch((error) => {
-      console.error('❌ データベース接続失敗:', error.message);
-      console.log('💡 解決方法:');
-      console.log('1. Vercelダッシュボードで環境変数を確認');
-      console.log('2. Supabaseの接続設定を確認');
-      console.log('3. ネットワーク接続を確認');
-    });
+  try {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    
+    await prisma.$connect();
+    console.log('✅ データベース接続成功');
+    await prisma.$disconnect();
+  } catch (error) {
+    console.error('❌ データベース接続失敗:', error.message);
+    console.log('💡 解決方法:');
+    console.log('1. Vercelダッシュボードで環境変数を確認');
+    console.log('2. Supabaseの接続設定を確認');
+    console.log('3. ネットワーク接続を確認');
+  }
 } else {
   console.log('❌ DATABASE_URLが設定されていません');
 }

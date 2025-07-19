@@ -1,28 +1,22 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 console.log('🔄 ローカル環境リセットスクリプト開始...');
 
 try {
-  // 1. 実行中のプロセスを停止
+  // 1. プロセスを停止
   console.log('🛑 実行中のプロセスを停止中...');
   try {
-    // npm run dev や npm start のプロセスを停止
     execSync('pkill -f "next dev"', { stdio: 'ignore' });
-    execSync('pkill -f "next start"', { stdio: 'ignore' });
-    console.log('✅ 実行中のプロセスを停止しました');
+    console.log('✅ Next.jsプロセスを停止しました');
   } catch (error) {
-    console.log('ℹ️ 停止するプロセスが見つかりませんでした');
+    console.log('ℹ️ 実行中のNext.jsプロセスはありませんでした');
   }
-  
-  // 2. Prismaクライアントの再生成
-  console.log('📦 Prismaクライアントを再生成中...');
-  execSync('npx prisma generate', { stdio: 'inherit' });
-  
-  // 3. キャッシュクリア
+
+  // 2. キャッシュをクリア
   console.log('🧹 キャッシュをクリア中...');
   
   // .nextディレクトリの削除
@@ -38,21 +32,21 @@ try {
     fs.rmSync(cacheDir, { recursive: true, force: true });
     console.log('✅ node_modules/.cacheディレクトリを削除しました');
   }
-  
-  // 4. 依存関係の再インストール
+
+  // 3. Prismaクライアントを再生成
+  console.log('📦 Prismaクライアントを再生成中...');
+  execSync('npx prisma generate', { stdio: 'inherit' });
+  console.log('✅ Prismaクライアントを再生成しました');
+
+  // 4. 依存関係を再インストール
   console.log('📥 依存関係を再インストール中...');
   execSync('npm install', { stdio: 'inherit' });
-  
-  // 5. 開発サーバーの起動
-  console.log('🚀 開発サーバーを起動中...');
-  console.log('📝 サーバーが起動したら、以下のコマンドでマスタデータをセットアップしてください:');
-  console.log('   curl -X POST http://localhost:3000/api/setup-master-data');
-  console.log('');
-  console.log('📝 以下のコマンドでサーバーを起動してください:');
-  console.log('   npm run dev');
-  
+  console.log('✅ 依存関係を再インストールしました');
+
   console.log('🎉 ローカル環境リセットが完了しました！');
-  
+  console.log('💡 次のコマンドで開発サーバーを起動してください:');
+  console.log('   npm run dev');
+
 } catch (error) {
   console.error('❌ リセットスクリプトでエラーが発生しました:', error.message);
   process.exit(1);

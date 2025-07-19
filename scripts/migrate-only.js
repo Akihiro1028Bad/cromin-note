@@ -1,35 +1,21 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
+import { execSync } from 'child_process';
 
-console.log('🔄 Running migration only...');
+console.log('🔄 マイグレーション実行スクリプト開始...');
 
 try {
-  // 環境変数の確認
-  if (!process.env.DIRECT_URL) {
-    console.error('❌ DIRECT_URL environment variable is required');
-    process.exit(1);
-  }
+  // Prismaクライアントの生成
+  console.log('📦 Prismaクライアントを生成中...');
+  execSync('npx prisma generate', { stdio: 'inherit' });
 
-  console.log('📦 Generating Prisma client...');
-  execSync('npx prisma generate', { 
-    stdio: 'inherit',
-    env: { ...process.env, NODE_ENV: 'production' }
-  });
+  // マイグレーションの実行
+  console.log('🗄️ マイグレーションを実行中...');
+  execSync('npx prisma migrate deploy', { stdio: 'inherit' });
 
-  console.log('🔄 Running database migrations with DIRECT_URL...');
-  execSync('npx prisma migrate deploy', { 
-    stdio: 'inherit',
-    env: { 
-      ...process.env, 
-      NODE_ENV: 'production',
-      DATABASE_URL: process.env.DIRECT_URL
-    }
-  });
+  console.log('✅ マイグレーションが完了しました！');
 
-  console.log('✅ Migration completed successfully!');
-  
 } catch (error) {
-  console.error('❌ Migration failed:', error.message);
+  console.error('❌ マイグレーションでエラーが発生しました:', error.message);
   process.exit(1);
 } 

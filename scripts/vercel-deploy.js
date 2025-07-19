@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ESモジュールでの__dirnameの取得
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 console.log('🚀 Vercelデプロイスクリプト開始...');
 
@@ -38,7 +43,7 @@ try {
   // 3. データベース接続テスト
   console.log('🔗 データベース接続をテスト中...');
   try {
-    const { PrismaClient } = require('@prisma/client');
+    const { PrismaClient } = await import('@prisma/client');
     const prisma = new PrismaClient();
     await prisma.$connect();
     console.log('✅ データベース接続成功');
