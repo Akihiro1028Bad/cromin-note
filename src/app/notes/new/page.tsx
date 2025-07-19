@@ -240,41 +240,104 @@ export default function NewNotePage() {
     try {
       // 認証トークン取得
       const token = localStorage.getItem('token');
+      if (!token) {
+        alert('認証トークンが見つかりません。再度ログインしてください。');
+        router.push('/auth/login');
+        return;
+      }
+
+      // リクエストボディの検証
+      if (!typeId || !title.trim()) {
+        alert('種別とタイトルは必須です。');
+        return;
+      }
+
+      const requestBody = {
+        typeId: Number(typeId),
+        title: title.trim(),
+        opponentIds: Array.isArray(opponentIds) ? opponentIds : [],
+        content: content || '',
+        resultId: resultId ? Number(resultId) : null,
+        categoryId: categoryId ? Number(categoryId) : null,
+        memo: memo || '',
+        condition: condition || '',
+        isPublic: Boolean(isPublic),
+        scoreData: scoreData.length > 0 ? JSON.stringify(scoreData) : null,
+        totalSets: Number(totalSets) || 0,
+        wonSets: scoreData.filter(set => set.myScore > set.opponentScore).length,
+        matchDuration: Number(matchDuration) || 0
+      };
+
+      console.log('Sending create request:', {
+        requestBody: {
+          ...requestBody,
+          scoreData: scoreData.length // スコアデータの長さのみログ出力
+        }
+      });
+
       const res = await fetch('/api/notes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          typeId,
-          title,
-          opponentIds, // 変更: 対戦相手ID配列を送信
-          content,
-          resultId,
-          categoryId,
-          memo,
-          condition,
-          isPublic,
-          scoreData: scoreData.length > 0 ? JSON.stringify(scoreData) : null,
-          totalSets: totalSets > 0 ? totalSets : null,
-          wonSets: wonSets > 0 ? wonSets : null,
-          matchDuration: matchDuration > 0 ? matchDuration : null
-        })
+        body: JSON.stringify(requestBody)
       });
-      if (!res.ok) throw new Error('ノート投稿APIエラー');
-      
-      // 投稿完了後の選択肢を提供
-      const shouldViewAnalytics = confirm('ノートの投稿が完了しました！\n\n成績分析ページで新しい記録を確認しますか？\n「OK」で分析ページ、「キャンセル」でノート一覧に移動します。');
-      
-      if (shouldViewAnalytics) {
-        router.push('/analytics');
+
+      const responseData = await res.json();
+
+      console.log('Create response:', {
+        status: res.status,
+        success: responseData.success,
+        message: responseData.message
+      });
+
+      if (!res.ok) {
+        // より詳細なエラーメッセージ
+        let errorMessage = responseData.message || 'ノート投稿APIエラー';
+        
+        if (res.status === 400) {
+          errorMessage = `入力データに問題があります: ${responseData.message}`;
+        } else if (res.status === 401) {
+          errorMessage = '認証に失敗しました。再度ログインしてください。';
+          router.push('/auth/login');
+          return;
+        } else if (res.status >= 500) {
+          errorMessage = `サーバーエラーが発生しました: ${responseData.message}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      if (responseData.success) {
+        // 投稿完了後の選択肢を提供
+        const shouldViewAnalytics = confirm('ノートの投稿が完了しました！\n\n成績分析ページで新しい記録を確認しますか？\n「OK」で分析ページ、「キャンセル」でノート一覧に移動します。');
+        
+        if (shouldViewAnalytics) {
+          router.push('/analytics');
+        } else {
+          router.push('/notes');
+        }
       } else {
-        router.push('/notes');
+        throw new Error(responseData.message || 'ノートの投稿に失敗しました');
       }
     } catch (error) {
       console.error('Error creating note:', error);
-      alert('ノートの投稿に失敗しました。');
+      
+      // より詳細なエラーメッセージ
+      let errorMessage = 'ノートの投稿に失敗しました';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'ネットワークエラーが発生しました。インターネット接続を確認してください。';
+        } else if (error.message.includes('JSON')) {
+          errorMessage = 'サーバーからの応答が正しくありません。';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }

@@ -12,9 +12,21 @@ export default function MyNotesPage() {
   const router = useRouter();
   const { user } = useAuth();
 
+  // デバッグ用：認証状態をログ出力
+  useEffect(() => {
+    console.log('Auth state:', {
+      user: user ? { id: user.id, email: user.email, nickname: user.nickname } : null,
+      hasToken: !!localStorage.getItem('token'),
+      tokenLength: localStorage.getItem('token')?.length || 0
+    });
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchMyNotes();
+    } else {
+      console.log('No user found, skipping fetchMyNotes');
+      setLoading(false);
     }
   }, [user]);
 
@@ -27,22 +39,34 @@ export default function MyNotesPage() {
         return;
       }
 
+      console.log('Fetching my notes...');
       const res = await fetch('/api/notes/my', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
+      const json = await res.json();
+      console.log('API response:', {
+        status: res.status,
+        success: json.success,
+        dataLength: json.data?.length,
+        error: json.error
+      });
+      
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'ノート取得APIエラー');
+        throw new Error(json.error || json.details || 'ノート取得APIエラー');
       }
       
-      const json = await res.json();
-      console.log('Fetched my notes data:', json);
+      if (!json.success) {
+        throw new Error(json.error || 'ノートの取得に失敗しました');
+      }
+      
       setNotes(json.data || []);
     } catch (error) {
       console.error('Error fetching my notes:', error);
+      // エラーをユーザーに表示
+      alert(`ノートの取得に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

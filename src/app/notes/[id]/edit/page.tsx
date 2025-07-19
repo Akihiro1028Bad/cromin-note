@@ -333,21 +333,35 @@ export default function EditNotePage() {
         return;
       }
 
+      // リクエストボディの検証
+      if (!typeId || !title.trim()) {
+        alert('種別とタイトルは必須です。');
+        return;
+      }
+
       const requestBody = {
-        typeId,
-        title,
-        opponentIds, // 変更: 対戦相手ID配列を送信
-        content,
-        resultId,
-        categoryId,
-        memo,
-        condition,
-        isPublic,
+        typeId: Number(typeId),
+        title: title.trim(),
+        opponentIds: Array.isArray(opponentIds) ? opponentIds : [],
+        content: content || '',
+        resultId: resultId ? Number(resultId) : null,
+        categoryId: categoryId ? Number(categoryId) : null,
+        memo: memo || '',
+        condition: condition || '',
+        isPublic: Boolean(isPublic),
         scoreData: JSON.stringify(scoreData),
-        totalSets,
+        totalSets: Number(totalSets) || 0,
         wonSets: scoreData.filter(set => set.myScore > set.opponentScore).length,
-        matchDuration
+        matchDuration: Number(matchDuration) || 0
       };
+
+      console.log('Sending update request:', {
+        noteId,
+        requestBody: {
+          ...requestBody,
+          scoreData: scoreData.length // スコアデータの長さのみログ出力
+        }
+      });
 
       const res = await fetch(`/api/notes/${noteId}`, {
         method: 'PUT',
@@ -360,18 +374,57 @@ export default function EditNotePage() {
 
       const responseData = await res.json();
 
+      console.log('Update response:', {
+        status: res.status,
+        success: responseData.success,
+        message: responseData.message
+      });
+
       if (!res.ok) {
-        throw new Error(responseData.message || 'ノート更新APIエラー');
+        // より詳細なエラーメッセージ
+        let errorMessage = responseData.message || 'ノート更新APIエラー';
+        
+        if (res.status === 400) {
+          errorMessage = `入力データに問題があります: ${responseData.message}`;
+        } else if (res.status === 401) {
+          errorMessage = '認証に失敗しました。再度ログインしてください。';
+          router.push('/auth/login');
+          return;
+        } else if (res.status === 403) {
+          errorMessage = 'このノートを編集する権限がありません。';
+        } else if (res.status === 404) {
+          errorMessage = 'ノートが見つかりません。';
+        } else if (res.status >= 500) {
+          errorMessage = `サーバーエラーが発生しました: ${responseData.message}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (responseData.success) {
+        // 成功時の処理
+        alert('ノートを更新しました。');
         router.replace(`/notes/${noteId}`);
       } else {
         throw new Error(responseData.message || 'ノートの更新に失敗しました');
       }
     } catch (error) {
       console.error('Error updating note:', error);
-      alert(`ノートの更新に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // より詳細なエラーメッセージ
+      let errorMessage = 'ノートの更新に失敗しました';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'ネットワークエラーが発生しました。インターネット接続を確認してください。';
+        } else if (error.message.includes('JSON')) {
+          errorMessage = 'サーバーからの応答が正しくありません。';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
