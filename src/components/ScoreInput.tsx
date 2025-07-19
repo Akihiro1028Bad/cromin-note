@@ -29,6 +29,19 @@ export default function ScoreInput({
   // 前回のtotalSetsを記録
   const prevTotalSetsRef = useRef(totalSets);
   const prevScoreDataLengthRef = useRef(scoreData.length);
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  // スクロール位置を記録する関数
+  const handleInputFocus = () => {
+    setScrollPosition(window.scrollY);
+  };
+
+  // キーパッドが閉じた時にスクロール位置を調整する関数
+  const handleInputBlur = () => {
+    setTimeout(() => {
+      window.scrollTo(0, scrollPosition);
+    }, 100);
+  };
 
   // セット数が変更された時に自動でスコア入力欄を生成
   useEffect(() => {
@@ -179,6 +192,8 @@ export default function ScoreInput({
               onMatchDurationChange(numValue);
             }
           }}
+          onBlur={handleInputBlur}
+          onFocus={handleInputFocus}
           className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           placeholder="例: 45"
         />
@@ -240,6 +255,8 @@ export default function ScoreInput({
                       max="21"
                       value={set.myScore}
                       onChange={(e) => updateSetScore(index, 'myScore', validateScoreInput(e.target.value))}
+                      onBlur={handleInputBlur}
+                      onFocus={handleInputFocus}
                       className="w-full h-12 border-2 border-blue-200 rounded-lg px-3 text-center text-lg font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
                       placeholder="0"
                     />
@@ -260,6 +277,8 @@ export default function ScoreInput({
                       max="21"
                       value={set.opponentScore}
                       onChange={(e) => updateSetScore(index, 'opponentScore', validateScoreInput(e.target.value))}
+                      onBlur={handleInputBlur}
+                      onFocus={handleInputFocus}
                       className="w-full h-12 border-2 border-red-200 rounded-lg px-3 text-center text-lg font-bold text-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-red-50"
                       placeholder="0"
                     />

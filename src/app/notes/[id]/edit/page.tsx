@@ -30,6 +30,7 @@ export default function EditNotePage() {
   const [touchEnd, setTouchEnd] = useState(0);
   const [touchStartY, setTouchStartY] = useState(0);
   const [touchEndY, setTouchEndY] = useState(0);
+  const [scrollPosition, setScrollPosition] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   // フォーム状態
@@ -131,6 +132,18 @@ export default function EditNotePage() {
     setTouchEnd(0);
     setTouchStartY(0);
     setTouchEndY(0);
+  };
+
+  // スクロール位置を記録する関数
+  const handleInputFocus = () => {
+    setScrollPosition(window.scrollY);
+  };
+
+  // キーパッドが閉じた時にスクロール位置を調整する関数
+  const handleInputBlur = () => {
+    setTimeout(() => {
+      window.scrollTo(0, scrollPosition);
+    }, 100);
   };
 
   // データ取得
@@ -505,6 +518,8 @@ export default function EditNotePage() {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    onBlur={handleInputBlur}
+                    onFocus={handleInputFocus}
                     placeholder="タイトルを入力"
                     className={`w-full border-2 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
                       errors.title ? 'border-red-300 bg-red-50' : 'border-gray-300'
@@ -573,6 +588,8 @@ export default function EditNotePage() {
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
+                    onBlur={handleInputBlur}
+                    onFocus={handleInputFocus}
                     placeholder="練習内容や試合の詳細を記録"
                     rows={5}
                     className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
@@ -587,6 +604,8 @@ export default function EditNotePage() {
                   <textarea
                     value={memo}
                     onChange={(e) => setMemo(e.target.value)}
+                    onBlur={handleInputBlur}
+                    onFocus={handleInputFocus}
                     placeholder="追加のメモがあれば記録"
                     rows={4}
                     className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
@@ -602,6 +621,8 @@ export default function EditNotePage() {
                     type="text"
                     value={condition}
                     onChange={(e) => setCondition(e.target.value)}
+                    onBlur={handleInputBlur}
+                    onFocus={handleInputFocus}
                     placeholder="体調やコンディションを記録"
                     className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   />
