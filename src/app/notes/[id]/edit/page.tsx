@@ -28,6 +28,8 @@ export default function EditNotePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [touchStartY, setTouchStartY] = useState(0);
+  const [touchEndY, setTouchEndY] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   // フォーム状態
@@ -93,18 +95,31 @@ export default function EditNotePage() {
   // スワイプナビゲーション
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
+    setTouchStartY(e.targetTouches[0].clientY);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
+    setTouchEndY(e.targetTouches[0].clientY);
   };
 
   const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd || !touchStartY || !touchEndY) return;
     
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 30; // 感度を上げる（50から30に変更）
-    const isRightSwipe = distance < -30; // 感度を上げる（-50から-30に変更）
+    const distanceX = touchStart - touchEnd;
+    const distanceY = Math.abs(touchStartY - touchEndY);
+    
+    // 縦方向の移動が横方向より大きい場合はスクロールとして扱う
+    if (distanceY > Math.abs(distanceX)) {
+      setTouchStart(0);
+      setTouchEnd(0);
+      setTouchStartY(0);
+      setTouchEndY(0);
+      return;
+    }
+    
+    const isLeftSwipe = distanceX > 50; // 感度を下げる（30から50に変更）
+    const isRightSwipe = distanceX < -50; // 感度を下げる（-30から-50に変更）
 
     if (isLeftSwipe && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -114,6 +129,8 @@ export default function EditNotePage() {
 
     setTouchStart(0);
     setTouchEnd(0);
+    setTouchStartY(0);
+    setTouchEndY(0);
   };
 
   // データ取得
@@ -194,7 +211,7 @@ export default function EditNotePage() {
   // リアルタイムバリデーション
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
-  // バリデーション関数
+  // スコアデータが有効かどうかを判定する関数
   const isValidScoreData = (scores: ScoreSet[]): boolean => {
     if (scores.length === 0) return false;
     return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
@@ -272,10 +289,11 @@ export default function EditNotePage() {
 
   // リアルタイムバリデーション
   useEffect(() => {
-    if (typeId || title.trim()) {
-      validateForm();
-    }
-  }, [typeId, title, categoryId, opponentIds, scoreData, selectedType, selectedCategory]);
+    // 初期化時はバリデーションを実行しない
+    if (noteTypes.length === 0) return;
+    
+    validateForm();
+  }, [typeId, title, categoryId, opponentIds, scoreData, selectedType, selectedCategory, noteTypes.length]);
 
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
@@ -466,6 +484,8 @@ export default function EditNotePage() {
                         className={`p-4 text-left rounded-lg border-2 transition-all duration-200 active:scale-95 min-h-[56px] flex items-center ${
                           typeId === type.id
                             ? 'border-blue-500 bg-blue-50 text-blue-900'
+                            : errors.typeId
+                            ? 'border-red-300 bg-red-50 text-gray-700'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -473,6 +493,7 @@ export default function EditNotePage() {
                       </button>
                     ))}
                   </div>
+                  {errors.typeId && <p className="mt-1 text-sm text-red-600">{errors.typeId}</p>}
                 </div>
 
                 {/* タイトル */}

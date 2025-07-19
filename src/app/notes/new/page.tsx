@@ -20,6 +20,8 @@ export default function NewNotePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [touchStartY, setTouchStartY] = useState(0);
+  const [touchEndY, setTouchEndY] = useState(0);
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -80,6 +82,26 @@ export default function NewNotePage() {
   // リアルタイムバリデーション
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
+  // スコアデータが有効かどうかを判定する関数
+  const isValidScoreData = (scores: ScoreSet[]): boolean => {
+    if (scores.length === 0) return false;
+    
+    // 全てのセットで0-0以外のスコアが入力されているかチェック
+    return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
+  };
+
+  // 対戦相手が有効かどうかを判定する関数
+  const isValidOpponent = (opponentIds: string[], noteType: string): boolean => {
+    if (opponentIds.length === 0) return false;
+    
+    const isDoubles = noteType === 'ダブルス' || noteType === 'ミックスダブルス';
+    if (isDoubles) {
+      return opponentIds.length >= 2;
+    }
+    
+    return opponentIds.length >= 1;
+  };
+
   // バリデーション関数
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -112,10 +134,11 @@ export default function NewNotePage() {
 
   // リアルタイムバリデーション
   useEffect(() => {
-    if (typeId || title.trim()) {
-      validateForm();
-    }
-  }, [typeId, title, categoryId, opponentIds, scoreData, selectedType]);
+    // 初期化時はバリデーションを実行しない
+    if (noteTypes.length === 0) return;
+    
+    validateForm();
+  }, [typeId, title, categoryId, opponentIds, scoreData, selectedType, noteTypes.length]);
 
   useEffect(() => {
     fetchMasterData();
@@ -124,18 +147,31 @@ export default function NewNotePage() {
   // スワイプナビゲーション
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
+    setTouchStartY(e.targetTouches[0].clientY);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
+    setTouchEndY(e.targetTouches[0].clientY);
   };
 
   const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd || !touchStartY || !touchEndY) return;
     
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 30; // 感度を上げる（50から30に変更）
-    const isRightSwipe = distance < -30; // 感度を上げる（-50から-30に変更）
+    const distanceX = touchStart - touchEnd;
+    const distanceY = Math.abs(touchStartY - touchEndY);
+    
+    // 縦方向の移動が横方向より大きい場合はスクロールとして扱う
+    if (distanceY > Math.abs(distanceX)) {
+      setTouchStart(0);
+      setTouchEnd(0);
+      setTouchStartY(0);
+      setTouchEndY(0);
+      return;
+    }
+    
+    const isLeftSwipe = distanceX > 50; // 感度を下げる（30から50に変更）
+    const isRightSwipe = distanceX < -50; // 感度を下げる（-30から-50に変更）
 
     if (isLeftSwipe && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -145,6 +181,8 @@ export default function NewNotePage() {
 
     setTouchStart(0);
     setTouchEnd(0);
+    setTouchStartY(0);
+    setTouchEndY(0);
   };
 
   const fetchMasterData = async () => {
@@ -233,26 +271,6 @@ export default function NewNotePage() {
   console.log('Current categories:', categories);
   console.log('Current categoryId:', categoryId);
   console.log('Selected category:', selectedCategory);
-
-  // スコアデータが有効かどうかを判定する関数
-  const isValidScoreData = (scores: ScoreSet[]): boolean => {
-    if (scores.length === 0) return false;
-    
-    // 全てのセットで0-0以外のスコアが入力されているかチェック
-    return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
-  };
-
-  // 対戦相手が有効かどうかを判定する関数
-  const isValidOpponent = (opponentIds: string[], noteType: string): boolean => {
-    if (opponentIds.length === 0) return false;
-    
-    const isDoubles = noteType === 'ダブルス' || noteType === 'ミックスダブルス';
-    if (isDoubles) {
-      return opponentIds.length >= 2;
-    }
-    
-    return opponentIds.length >= 1;
-  };
 
   // 進捗計算
   const progressData = (() => {
@@ -362,6 +380,8 @@ export default function NewNotePage() {
                         className={`p-4 text-left rounded-lg border-2 transition-all duration-200 active:scale-95 min-h-[56px] flex items-center ${
                           typeId === type.id
                             ? 'border-blue-500 bg-blue-50 text-blue-900'
+                            : errors.typeId
+                            ? 'border-red-300 bg-red-50 text-gray-700'
                             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                         }`}
                       >
@@ -372,6 +392,7 @@ export default function NewNotePage() {
                   {noteTypes.length === 0 && (
                     <p className="mt-3 text-sm text-red-600">種別データが読み込まれていません</p>
                   )}
+                  {errors.typeId && <p className="mt-1 text-sm text-red-600">{errors.typeId}</p>}
                 </div>
 
                 {/* タイトル */}
