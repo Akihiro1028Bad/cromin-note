@@ -163,7 +163,31 @@ export default function OpponentSelect({
     <div className="w-full">
       <label className="block text-lg font-semibold text-gray-900 mb-4">
         対戦相手 {isRequired && <span className="text-red-500">*</span>}
+        {isDoubles && (
+          <span className="text-sm text-gray-600 ml-2">
+            ({selectedOpponentIds.filter(id => id).length}/2人選択中)
+          </span>
+        )}
       </label>
+
+      {/* 選択状況の視覚的表示 */}
+      {isDoubles && (
+        <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-blue-700">選択状況:</span>
+            <span className={`font-semibold ${
+              selectedOpponentIds.filter(id => id).length === 2 ? 'text-green-600' : 'text-orange-600'
+            }`}>
+              {selectedOpponentIds.filter(id => id).length === 2 ? '完了' : `${selectedOpponentIds.filter(id => id).length}/2人`}
+            </span>
+          </div>
+          {selectedOpponentIds.filter(id => id).length < 2 && (
+            <p className="text-xs text-blue-600 mt-1">
+              ダブルス・ミックスダブルスでは対戦相手を2人選択してください
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 選択欄 */}
       <div className="space-y-3">

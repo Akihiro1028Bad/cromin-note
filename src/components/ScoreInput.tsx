@@ -26,7 +26,6 @@ export default function ScoreInput({
   onMatchDurationChange,
   initialShow = false
 }: ScoreInputProps) {
-  // 前回のtotalSetsを記録
   const prevTotalSetsRef = useRef(totalSets);
   const prevScoreDataLengthRef = useRef(scoreData.length);
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -48,11 +47,9 @@ export default function ScoreInput({
     const prevTotalSets = prevTotalSetsRef.current;
     const prevScoreDataLength = prevScoreDataLengthRef.current;
 
-    // totalSetsまたはscoreData.lengthが変更された場合のみ処理
     if (totalSets !== prevTotalSets || scoreData.length !== prevScoreDataLength) {
       if (totalSets > 0) {
         if (scoreData.length === 0) {
-          // スコアデータが空の場合は新しく生成
           const newScoreData = Array.from({ length: totalSets }, (_, index) => ({
             setNumber: index + 1,
             myScore: 0,
@@ -60,9 +57,7 @@ export default function ScoreInput({
           }));
           onScoreChange(newScoreData);
         } else if (scoreData.length !== totalSets) {
-          // セット数が変更された場合は既存データを調整
           if (scoreData.length < totalSets) {
-            // セット数が増えた場合は追加
             const additionalSets = Array.from({ length: totalSets - scoreData.length }, (_, index) => ({
               setNumber: scoreData.length + index + 1,
               myScore: 0,
@@ -70,7 +65,6 @@ export default function ScoreInput({
             }));
             onScoreChange([...scoreData, ...additionalSets]);
           } else {
-            // セット数が減った場合は削除
             const adjustedScores = scoreData.slice(0, totalSets).map((score, index) => ({
               ...score,
               setNumber: index + 1
@@ -79,25 +73,20 @@ export default function ScoreInput({
           }
         }
       } else if (totalSets === 0) {
-        // セット数が0にリセットされた場合はスコアデータをクリア
         onScoreChange([]);
       }
     }
 
-    // 現在の値を記録
     prevTotalSetsRef.current = totalSets;
     prevScoreDataLengthRef.current = scoreData.length;
-  }, [totalSets, scoreData.length]); // onScoreChangeを依存関係から削除
+  }, [totalSets, scoreData.length]);
 
   // スコアデータが有効かどうかを判定する関数
   const isValidScoreData = (scores: ScoreSet[]): boolean => {
     if (scores.length === 0) return false;
-    
-    // 全てのセットで0-0以外のスコアが入力されているかチェック
     return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
   };
 
-  // 現在のスコアデータが有効かどうかを判定
   const hasValidScores = isValidScoreData(scoreData);
 
   const addSet = () => {
@@ -111,7 +100,6 @@ export default function ScoreInput({
 
   const removeSet = (index: number) => {
     const newScores = scoreData.filter((_, i) => i !== index);
-    // セット番号を再振り分け
     const renumberedScores = newScores.map((score, i) => ({
       ...score,
       setNumber: i + 1
@@ -147,7 +135,7 @@ export default function ScoreInput({
   const validateScoreInput = (value: string): number => {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 0) return 0;
-    if (num > 21) return 21; // クロスミントンの最大スコア
+    if (num > 21) return 21;
     return num;
   };
 
@@ -217,7 +205,6 @@ export default function ScoreInput({
           </div>
 
           {scoreData.map((set, index) => {
-            // このセットが0-0かどうかを判定
             const isUnfilled = set.myScore === 0 && set.opponentScore === 0;
             
             return (
@@ -243,11 +230,11 @@ export default function ScoreInput({
                   </button>
                 </div>
                 
-                {/* スコア入力エリア */}
-                <div className="flex items-center justify-center gap-3">
+                {/* スコア入力エリア - スマホ特化レイアウト */}
+                <div className="space-y-3">
                   {/* 自分のスコア */}
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">自分のスコア</label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">自分のスコア</label>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -263,13 +250,13 @@ export default function ScoreInput({
                   </div>
 
                   {/* VS */}
-                  <div className="flex items-center justify-center px-2">
+                  <div className="flex items-center justify-center">
                     <span className="text-lg font-bold text-gray-500">VS</span>
                   </div>
 
                   {/* 相手のスコア */}
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">相手のスコア</label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">相手のスコア</label>
                     <input
                       type="number"
                       inputMode="numeric"
