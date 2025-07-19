@@ -305,7 +305,10 @@ export default function EditNotePage() {
     // 初期化時はバリデーションを実行しない
     if (noteTypes.length === 0) return;
     
-    validateForm();
+    // ユーザーが何か入力した後にのみバリデーションを実行
+    if (typeId || title.trim() || categoryId || opponentIds.length > 0 || scoreData.length > 0) {
+      validateForm();
+    }
   }, [typeId, title, categoryId, opponentIds, scoreData, selectedType, selectedCategory, noteTypes.length]);
 
   // フォーム送信

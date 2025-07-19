@@ -215,12 +215,6 @@ export default function OpponentSelect({
         <span className="text-base font-medium">新規対戦相手を登録</span>
       </button>
 
-      {isRequired && !isValid() && (
-        <p className="mt-3 text-base text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-          {isDoubles ? '2名の対戦相手を選択してください' : '対戦相手を選択してください'}
-        </p>
-      )}
-
       {/* 対戦相手選択モーダル */}
       <OpponentModal
         isOpen={isModalOpen}
