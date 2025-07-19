@@ -22,10 +22,25 @@ export const validateOpponents = (opponentIds: string[], categoryName?: string) 
   return { isValid: true, errorMessage: '' };
 };
 
+// 数値入力の表示・計算用変換関数
+export const getDisplayValue = (value: string | number): string => {
+  if (value === 0 || value === '0') return '';
+  return String(value);
+};
+
+export const getNumericValue = (value: string | number): number => {
+  const num = typeof value === 'string' ? parseInt(value, 10) : value;
+  return isNaN(num) ? 0 : num;
+};
+
 // スコアデータが有効かどうかを判定する関数
-export const isValidScoreData = (scores: { myScore: number; opponentScore: number }[]): boolean => {
+export const isValidScoreData = (scores: { myScore: string | number; opponentScore: string | number }[]): boolean => {
   if (scores.length === 0) return false;
-  return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
+  return scores.every(set => {
+    const myScore = getNumericValue(set.myScore);
+    const opponentScore = getNumericValue(set.opponentScore);
+    return myScore > 0 || opponentScore > 0;
+  });
 };
 
 // フォームの基本バリデーション
@@ -48,7 +63,7 @@ export const validateGameForm = (
   categoryId: number | null,
   opponentIds: string[],
   selectedCategoryName?: string,
-  scoreData: { myScore: number; opponentScore: number }[] = []
+  scoreData: { myScore: string | number; opponentScore: string | number }[] = []
 ) => {
   const errors: {[key: string]: string} = {};
 

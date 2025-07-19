@@ -4,12 +4,13 @@ import { useRouter, useParams } from "next/navigation";
 import { NoteType, Result, Note } from "@/types/database";
 import { PageTransition, LoadingSpinner, ScoreInput, Button, OpponentSelect, CategorySelect } from '@/components';
 import { useAuth } from "@/contexts/AuthContext";
+import { getNumericValue } from "@/lib/validationUtils";
 import Image from "next/image";
 
 interface ScoreSet {
   setNumber: number;
-  myScore: number;
-  opponentScore: number;
+  myScore: string;
+  opponentScore: string;
 }
 
 export default function EditNotePage() {
@@ -42,7 +43,7 @@ export default function EditNotePage() {
   // スコア記録状態
   const [scoreData, setScoreData] = useState<ScoreSet[]>([]);
   const [totalSets, setTotalSets] = useState(0);
-  const [matchDuration, setMatchDuration] = useState(0);
+  const [matchDuration, setMatchDuration] = useState<string>('');
 
   // 選択された種別とカテゴリをメモ化
   const selectedType = useMemo(
@@ -116,7 +117,13 @@ export default function EditNotePage() {
         if (noteData.scoreData) {
           try {
             const parsedScoreData = JSON.parse(noteData.scoreData);
-            setScoreData(parsedScoreData);
+            // 数値から文字列に変換
+            const convertedScoreData = parsedScoreData.map((set: any) => ({
+              setNumber: set.setNumber,
+              myScore: String(set.myScore),
+              opponentScore: String(set.opponentScore)
+            }));
+            setScoreData(convertedScoreData);
             setTotalSets(noteData.totalSets || parsedScoreData.length);
           } catch (e) {
             console.error('スコアデータの解析に失敗:', e);
@@ -129,7 +136,7 @@ export default function EditNotePage() {
         }
         
         // 試合時間復元
-        setMatchDuration(noteData.matchDuration || 0);
+        setMatchDuration(String(noteData.matchDuration || ''));
       } catch (error) {
         console.error('Error fetching data:', error);
         alert('ノートの取得に失敗しました。');
@@ -148,7 +155,7 @@ export default function EditNotePage() {
   // スコアデータが有効かどうかを判定する関数
   const isValidScoreData = (scores: ScoreSet[]): boolean => {
     if (scores.length === 0) return false;
-    return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
+    return scores.every(set => getNumericValue(set.myScore) > 0 || getNumericValue(set.opponentScore) > 0);
   };
 
   // 対戦相手バリデーション専用関数
@@ -269,10 +276,14 @@ export default function EditNotePage() {
         memo: memo || '',
         condition: condition || '',
         isPublic: Boolean(isPublic),
-        scoreData: scoreData.length > 0 ? JSON.stringify(scoreData) : null,
+        scoreData: scoreData.length > 0 ? JSON.stringify(scoreData.map(set => ({
+          setNumber: set.setNumber,
+          myScore: getNumericValue(set.myScore),
+          opponentScore: getNumericValue(set.opponentScore)
+        }))) : null,
         totalSets: Number(totalSets) || 0,
-        wonSets: scoreData.filter(set => set.myScore > set.opponentScore).length,
-        matchDuration: Number(matchDuration) || 0
+        wonSets: scoreData.filter(set => getNumericValue(set.myScore) > getNumericValue(set.opponentScore)).length,
+        matchDuration: getNumericValue(matchDuration) || 0
       };
 
       const res = await fetch(`/api/notes/${noteId}`, {

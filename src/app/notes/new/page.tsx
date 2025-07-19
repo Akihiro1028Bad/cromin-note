@@ -3,13 +3,14 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { NoteType, Result } from "@/types/database";
 import { PageTransition, LoadingSpinner, ScoreInput, Button, OpponentSelect, CategorySelect } from '@/components';
+import { getNumericValue } from "@/lib/validationUtils";
 import Image from "next/image";
 
 // スコアセット型
 interface ScoreSet {
   setNumber: number;
-  myScore: number;
-  opponentScore: number;
+  myScore: string;
+  opponentScore: string;
 }
 
 export default function NewNotePage() {
@@ -37,7 +38,7 @@ export default function NewNotePage() {
   const [scoreData, setScoreData] = useState<ScoreSet[]>([]);
   const [totalSets, setTotalSets] = useState(0);
   const [wonSets, setWonSets] = useState(0);
-  const [matchDuration, setMatchDuration] = useState(0);
+  const [matchDuration, setMatchDuration] = useState<string>('');
 
   const selectedType = noteTypes.find(t => t.id === typeId);
   const selectedCategory = categories.find(c => c.id === categoryId);
@@ -48,7 +49,11 @@ export default function NewNotePage() {
   // スコアデータが有効かどうかを判定する関数
   const isValidScoreData = (scores: ScoreSet[]): boolean => {
     if (scores.length === 0) return false;
-    return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
+    return scores.every(set => {
+      const myScore = getNumericValue(set.myScore);
+      const opponentScore = getNumericValue(set.opponentScore);
+      return myScore > 0 || opponentScore > 0;
+    });
   };
 
   // 対戦相手バリデーション専用関数
@@ -187,10 +192,14 @@ export default function NewNotePage() {
         memo: memo || '',
         condition: condition || '',
         isPublic: Boolean(isPublic),
-        scoreData: scoreData.length > 0 ? JSON.stringify(scoreData) : null,
+        scoreData: scoreData.length > 0 ? JSON.stringify(scoreData.map(set => ({
+          setNumber: set.setNumber,
+          myScore: getNumericValue(set.myScore),
+          opponentScore: getNumericValue(set.opponentScore)
+        }))) : null,
         totalSets: Number(totalSets) || 0,
-        wonSets: scoreData.filter(set => set.myScore > set.opponentScore).length,
-        matchDuration: Number(matchDuration) || 0
+        wonSets: scoreData.filter(set => getNumericValue(set.myScore) > getNumericValue(set.opponentScore)).length,
+        matchDuration: getNumericValue(matchDuration) || 0
       };
 
       const res = await fetch('/api/notes', {
