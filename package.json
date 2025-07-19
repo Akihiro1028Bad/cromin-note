@@ -2,7 +2,6 @@
   "name": "cromin-note-project",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "rm -rf .next && prisma generate && next build",
@@ -15,14 +14,14 @@
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
-    "deploy:migrate": "node scripts/deploy-migrate.js",
-    "migrate:only": "node scripts/migrate-only.js",
-    "vercel-build": "rm -rf .next && node scripts/vercel-deploy.js",
+    "deploy:migrate": "node scripts/deploy-migrate.mjs",
+    "migrate:only": "node scripts/migrate-only.mjs",
+    "vercel-build": "rm -rf .next && node scripts/vercel-deploy.mjs",
     "postinstall": "npx prisma generate",
-    "reset": "node scripts/local-reset.js",
-    "reset:full": "node scripts/local-reset.js && npm run dev",
+    "reset": "node scripts/local-reset.mjs",
+    "reset:full": "node scripts/local-reset.mjs && npm run dev",
     "quick-reset": "./scripts/quick-reset.sh",
-    "reset:auto": "node scripts/reset-with-setup.js"
+    "reset:auto": "node scripts/reset-with-setup.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
