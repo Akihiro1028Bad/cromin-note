@@ -14,8 +14,7 @@ interface AnalyticsData {
     longestWinStreak: number;
     longestLoseStreak: number;
   };
-  monthlyStats: Record<string, { total: number; wins: number; losses: number; draws: number }>;
-  yearlyStats: Record<string, { total: number; wins: number; losses: number; draws: number }>;
+
   opponentStats: Record<string, { 
     total: number; 
     wins: number; 
@@ -42,7 +41,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'trends'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'opponents'>('overview');
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -52,8 +51,8 @@ export default function AnalyticsPage() {
 
   // URLパラメータからタブの状態を取得
   useEffect(() => {
-    const tab = searchParams.get('tab') as 'overview' | 'opponents' | 'trends';
-    if (tab && ['overview', 'opponents', 'trends'].includes(tab)) {
+    const tab = searchParams.get('tab') as 'overview' | 'opponents';
+    if (tab && ['overview', 'opponents'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -187,16 +186,6 @@ export default function AnalyticsPage() {
               >
                 👥 対戦相手
               </button>
-              <button
-                onClick={() => setActiveTab('trends')}
-                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === 'trends'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                📈 トレンド
-              </button>
             </div>
           </div>
         </div>
@@ -273,41 +262,7 @@ export default function AnalyticsPage() {
 
 
 
-          {activeTab === 'trends' && (
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">最近の試合</h3>
-                <div className="space-y-3">
-                  {recentMatches.slice(0, 5).map((match) => (
-                    <div key={match.id} className="border-b border-gray-100 pb-3 last:border-b-0">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-gray-900 line-clamp-1">
-                          {match.title || "タイトルなし"}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          match.result === '勝ち' ? 'bg-green-100 text-green-700' :
-                          match.result === '負け' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {match.result || '不明'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm text-gray-600">
-                        <span>{match.opponent || '対戦相手不明'}</span>
-                        <span>{new Date(match.createdAt).toLocaleDateString("ja-JP")}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {recentMatches.length === 0 && (
-                    <div className="text-center py-8 text-gray-400">
-                      <div className="text-4xl mb-2">📈</div>
-                      <div>最近の試合データがありません</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+
         </div>
 
         {/* ボトムナビゲーション */}

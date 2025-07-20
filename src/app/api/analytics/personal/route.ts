@@ -44,31 +44,7 @@ export async function GET(request: NextRequest) {
     const draws = notes.filter(note => note.result?.name === '引き分け').length;
     const winRate = totalMatches > 0 ? (wins / totalMatches * 100).toFixed(1) : '0.0';
 
-    // 月別統計
-    const monthlyStats = notes.reduce((acc, note) => {
-      const month = note.createdAt.toISOString().substring(0, 7); // YYYY-MM形式
-      if (!acc[month]) {
-        acc[month] = { total: 0, wins: 0, losses: 0, draws: 0 };
-      }
-      acc[month].total++;
-      if (note.result?.name === '勝ち') acc[month].wins++;
-      else if (note.result?.name === '負け') acc[month].losses++;
-      else if (note.result?.name === '引き分け') acc[month].draws++;
-      return acc;
-    }, {} as Record<string, { total: number; wins: number; losses: number; draws: number }>);
 
-    // 年別統計
-    const yearlyStats = notes.reduce((acc, note) => {
-      const year = note.createdAt.getFullYear().toString();
-      if (!acc[year]) {
-        acc[year] = { total: 0, wins: 0, losses: 0, draws: 0 };
-      }
-      acc[year].total++;
-      if (note.result?.name === '勝ち') acc[year].wins++;
-      else if (note.result?.name === '負け') acc[year].losses++;
-      else if (note.result?.name === '引き分け') acc[year].draws++;
-      return acc;
-    }, {} as Record<string, { total: number; wins: number; losses: number; draws: number }>);
 
     // 対戦相手別統計
     const opponentStats = notes.reduce((acc, note) => {
@@ -186,8 +162,6 @@ export async function GET(request: NextRequest) {
           longestWinStreak,
           longestLoseStreak
         },
-        monthlyStats,
-        yearlyStats,
         opponentStats,
         typeStats,
         recentMatches
