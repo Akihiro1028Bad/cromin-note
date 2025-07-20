@@ -3,21 +3,21 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  directUrl    = env("DIRECT_URL")
   relationMode = "prisma"
 }
 
 model User {
-  id                String         @id @default(cuid())
-  email             String         @unique
-  passwordHash      String         @map("password_hash")
+  id                String     @id @default(cuid())
+  email             String     @unique
+  passwordHash      String     @map("password_hash")
   nickname          String?
-  emailVerified     Boolean        @default(false) @map("email_verified")
-  verificationToken String?        @map("verification_token")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
+  emailVerified     Boolean    @default(false) @map("email_verified")
+  verificationToken String?    @map("verification_token")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
   notes             Note[]
   opponents         Opponent[]
 
@@ -25,25 +25,25 @@ model User {
 }
 
 model NoteType {
-  id            Int            @id @default(autoincrement())
-  name          String         @unique
-  notes         Note[]
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  notes Note[]
 
   @@map("note_types")
 }
 
 model Result {
-  id            Int            @id @default(autoincrement())
-  name          String         @unique
-  notes         Note[]
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  notes Note[]
 
   @@map("results")
 }
 
 model Category {
-  id            Int            @id @default(autoincrement())
-  name          String         @unique
-  notes         Note[]
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  notes Note[]
 
   @@map("categories")
 }
@@ -57,51 +57,51 @@ model Opponent {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   noteOpponents NoteOpponent[]
 
-  @@unique([name, userId]) // ユーザーごとに名前の重複を防ぐ
+  @@unique([name, userId])
   @@index([userId])
   @@map("opponents")
 }
 
 model Note {
-  id            String     @id @default(cuid())
+  id            String         @id @default(cuid())
   title         String?
   content       String?
   memo          String?
   condition     String?
-  isPublic      Boolean    @default(false) @map("is_public")
-  userId        String     @map("user_id")
-  typeId        Int        @map("type_id")
-  resultId      Int?       @map("result_id")
-  categoryId    Int?       @map("category_id")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
-  matchDuration Int?       @map("match_duration")
-  totalSets     Int?       @map("total_sets")
-  wonSets       Int?       @map("won_sets")
-  result        Result?    @relation(fields: [resultId], references: [id])
-  noteType      NoteType   @relation(fields: [typeId], references: [id])
-  category      Category?  @relation(fields: [categoryId], references: [id])
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPublic      Boolean        @default(false) @map("is_public")
+  userId        String         @map("user_id")
+  typeId        Int            @map("type_id")
+  resultId      Int?           @map("result_id")
+  categoryId    Int?           @map("category_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  matchDuration Int?           @map("match_duration")
+  totalSets     Int?           @map("total_sets")
+  wonSets       Int?           @map("won_sets")
+  result        Result?        @relation(fields: [resultId], references: [id])
+  noteType      NoteType       @relation(fields: [typeId], references: [id])
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   scoreSets     ScoreSet[]
   noteOpponents NoteOpponent[]
 
   @@index([userId, createdAt])
   @@index([isPublic, createdAt])
   @@index([typeId, resultId])
-  @@index([userId, typeId]) // ユーザーとタイプでの検索
-  @@index([userId, resultId]) // ユーザーと結果での検索
-  @@index([createdAt]) // 日付での検索
-  @@index([categoryId]) // カテゴリでの検索
+  @@index([userId, typeId])
+  @@index([userId, resultId])
+  @@index([createdAt])
+  @@index([categoryId])
   @@map("cromin_notes")
 }
 
 model NoteOpponent {
-  id          String   @id @default(cuid())
-  noteId      String   @map("note_id")
-  opponentId  String   @map("opponent_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  opponent    Opponent @relation(fields: [opponentId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  noteId     String   @map("note_id")
+  opponentId String   @map("opponent_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  opponent   Opponent @relation(fields: [opponentId], references: [id], onDelete: Cascade)
 
   @@unique([noteId, opponentId])
   @@index([noteId])
@@ -117,6 +117,6 @@ model ScoreSet {
   opponentScore Int    @map("opponent_score")
   note          Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
 
-  @@index([noteId]) // ノートIDでの検索
+  @@index([noteId])
   @@map("score_sets")
 }

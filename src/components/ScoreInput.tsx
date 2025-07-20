@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { getDisplayValue, getNumericValue } from "@/lib/validationUtils";
 
 interface ScoreSet {
   setNumber: number;
-  myScore: number;
-  opponentScore: number;
+  myScore: string;
+  opponentScore: string;
 }
 
 interface ScoreInputProps {
@@ -12,8 +13,8 @@ interface ScoreInputProps {
   onScoreChange: (scores: ScoreSet[]) => void;
   totalSets: number;
   onTotalSetsChange: (sets: number) => void;
-  matchDuration: number;
-  onMatchDurationChange: (duration: number) => void;
+  matchDuration: string;
+  onMatchDurationChange: (duration: string) => void;
   initialShow?: boolean;
 }
 
@@ -26,38 +27,45 @@ export default function ScoreInput({
   onMatchDurationChange,
   initialShow = false
 }: ScoreInputProps) {
-  // 前回のtotalSetsを記録
   const prevTotalSetsRef = useRef(totalSets);
   const prevScoreDataLengthRef = useRef(scoreData.length);
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  // スクロール位置を記録する関数
+  const handleInputFocus = () => {
+    setScrollPosition(window.scrollY);
+  };
+
+  // キーパッドが閉じた時にスクロール位置を調整する関数
+  const handleInputBlur = () => {
+    setTimeout(() => {
+      window.scrollTo(0, scrollPosition);
+    }, 100);
+  };
 
   // セット数が変更された時に自動でスコア入力欄を生成
   useEffect(() => {
     const prevTotalSets = prevTotalSetsRef.current;
     const prevScoreDataLength = prevScoreDataLengthRef.current;
 
-    // totalSetsまたはscoreData.lengthが変更された場合のみ処理
     if (totalSets !== prevTotalSets || scoreData.length !== prevScoreDataLength) {
       if (totalSets > 0) {
         if (scoreData.length === 0) {
-          // スコアデータが空の場合は新しく生成
           const newScoreData = Array.from({ length: totalSets }, (_, index) => ({
             setNumber: index + 1,
-            myScore: 0,
-            opponentScore: 0
+            myScore: '',
+            opponentScore: ''
           }));
           onScoreChange(newScoreData);
         } else if (scoreData.length !== totalSets) {
-          // セット数が変更された場合は既存データを調整
           if (scoreData.length < totalSets) {
-            // セット数が増えた場合は追加
             const additionalSets = Array.from({ length: totalSets - scoreData.length }, (_, index) => ({
               setNumber: scoreData.length + index + 1,
-              myScore: 0,
-              opponentScore: 0
+              myScore: '',
+              opponentScore: ''
             }));
             onScoreChange([...scoreData, ...additionalSets]);
           } else {
-            // セット数が減った場合は削除
             const adjustedScores = scoreData.slice(0, totalSets).map((score, index) => ({
               ...score,
               setNumber: index + 1
@@ -66,39 +74,25 @@ export default function ScoreInput({
           }
         }
       } else if (totalSets === 0) {
-        // セット数が0にリセットされた場合はスコアデータをクリア
         onScoreChange([]);
       }
     }
 
-    // 現在の値を記録
     prevTotalSetsRef.current = totalSets;
     prevScoreDataLengthRef.current = scoreData.length;
-  }, [totalSets, scoreData.length]); // onScoreChangeを依存関係から削除
-
-  // スコアデータが有効かどうかを判定する関数
-  const isValidScoreData = (scores: ScoreSet[]): boolean => {
-    if (scores.length === 0) return false;
-    
-    // 全てのセットで0-0以外のスコアが入力されているかチェック
-    return scores.every(set => set.myScore > 0 || set.opponentScore > 0);
-  };
-
-  // 現在のスコアデータが有効かどうかを判定
-  const hasValidScores = isValidScoreData(scoreData);
+  }, [totalSets, scoreData.length]);
 
   const addSet = () => {
     const newSet: ScoreSet = {
       setNumber: scoreData.length + 1,
-      myScore: 0,
-      opponentScore: 0
+      myScore: '',
+      opponentScore: ''
     };
     onScoreChange([...scoreData, newSet]);
   };
 
   const removeSet = (index: number) => {
     const newScores = scoreData.filter((_, i) => i !== index);
-    // セット番号を再振り分け
     const renumberedScores = newScores.map((score, i) => ({
       ...score,
       setNumber: i + 1
@@ -106,14 +100,18 @@ export default function ScoreInput({
     onScoreChange(renumberedScores);
   };
 
-  const updateSetScore = (index: number, field: 'myScore' | 'opponentScore', value: number) => {
+  const updateSetScore = (index: number, field: 'myScore' | 'opponentScore', value: string) => {
     const newScores = [...scoreData];
     newScores[index] = { ...newScores[index], [field]: value };
     onScoreChange(newScores);
   };
 
   const calculateWonSets = () => {
-    return scoreData.filter(set => set.myScore > set.opponentScore).length;
+    return scoreData.filter(set => {
+      const myScore = getNumericValue(set.myScore);
+      const opponentScore = getNumericValue(set.opponentScore);
+      return myScore > opponentScore;
+    }).length;
   };
 
   const getMatchResult = () => {
@@ -127,15 +125,16 @@ export default function ScoreInput({
   };
 
   const formatScore = (scores: ScoreSet[]) => {
-    return scores.map(set => `${set.myScore}-${set.opponentScore}`).join(', ');
+    return scores.map(set => `${getNumericValue(set.myScore)}-${getNumericValue(set.opponentScore)}`).join(', ');
   };
 
   // 数値入力のバリデーション
-  const validateScoreInput = (value: string): number => {
+  const validateScoreInput = (value: string): string => {
+    if (value === '') return '';
     const num = parseInt(value, 10);
-    if (isNaN(num) || num < 0) return 0;
-    if (num > 21) return 21; // クロスミントンの最大スコア
-    return num;
+    if (isNaN(num) || num < 0) return '';
+    if (num > 21) return '21';
+    return String(num);
   };
 
   return (
@@ -171,14 +170,19 @@ export default function ScoreInput({
           inputMode="numeric"
           min="0"
           max="300"
-          value={matchDuration}
+          value={getDisplayValue(matchDuration)}
           onChange={(e) => {
             const value = e.target.value;
-            const numValue = value === '' ? 0 : parseInt(value, 10);
-            if (!isNaN(numValue) && numValue >= 0 && numValue <= 300) {
-              onMatchDurationChange(numValue);
+            onMatchDurationChange(value);
+          }}
+          onBlur={(e) => {
+            handleInputBlur();
+            // フォーカスアウト時に空文字列を0に変換
+            if (e.target.value === '') {
+              onMatchDurationChange('0');
             }
           }}
+          onFocus={handleInputFocus}
           className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           placeholder="例: 45"
         />
@@ -202,8 +206,9 @@ export default function ScoreInput({
           </div>
 
           {scoreData.map((set, index) => {
-            // このセットが0-0かどうかを判定
-            const isUnfilled = set.myScore === 0 && set.opponentScore === 0;
+            const myScore = getNumericValue(set.myScore);
+            const opponentScore = getNumericValue(set.opponentScore);
+            const isUnfilled = myScore === 0 && opponentScore === 0;
             
             return (
               <div
@@ -228,38 +233,60 @@ export default function ScoreInput({
                   </button>
                 </div>
                 
-                {/* スコア入力エリア */}
-                <div className="flex items-center justify-center gap-3">
+                {/* スコア入力エリア - スマホ特化レイアウト */}
+                <div className="space-y-3">
                   {/* 自分のスコア */}
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">自分のスコア</label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">自分のスコア</label>
                     <input
                       type="number"
                       inputMode="numeric"
                       min="0"
                       max="21"
-                      value={set.myScore}
-                      onChange={(e) => updateSetScore(index, 'myScore', validateScoreInput(e.target.value))}
+                      value={getDisplayValue(set.myScore)}
+                      onChange={(e) => {
+                        const value = validateScoreInput(e.target.value);
+                        updateSetScore(index, 'myScore', value);
+                      }}
+                      onBlur={(e) => {
+                        handleInputBlur();
+                        // フォーカスアウト時に空文字列を0に変換
+                        if (e.target.value === '') {
+                          updateSetScore(index, 'myScore', '0');
+                        }
+                      }}
+                      onFocus={handleInputFocus}
                       className="w-full h-12 border-2 border-blue-200 rounded-lg px-3 text-center text-lg font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
                       placeholder="0"
                     />
                   </div>
 
                   {/* VS */}
-                  <div className="flex items-center justify-center px-2">
+                  <div className="flex items-center justify-center">
                     <span className="text-lg font-bold text-gray-500">VS</span>
                   </div>
 
                   {/* 相手のスコア */}
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">相手のスコア</label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">相手のスコア</label>
                     <input
                       type="number"
                       inputMode="numeric"
                       min="0"
                       max="21"
-                      value={set.opponentScore}
-                      onChange={(e) => updateSetScore(index, 'opponentScore', validateScoreInput(e.target.value))}
+                      value={getDisplayValue(set.opponentScore)}
+                      onChange={(e) => {
+                        const value = validateScoreInput(e.target.value);
+                        updateSetScore(index, 'opponentScore', value);
+                      }}
+                      onBlur={(e) => {
+                        handleInputBlur();
+                        // フォーカスアウト時に空文字列を0に変換
+                        if (e.target.value === '') {
+                          updateSetScore(index, 'opponentScore', '0');
+                        }
+                      }}
+                      onFocus={handleInputFocus}
                       className="w-full h-12 border-2 border-red-200 rounded-lg px-3 text-center text-lg font-bold text-red-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-red-50"
                       placeholder="0"
                     />
@@ -267,16 +294,16 @@ export default function ScoreInput({
                 </div>
 
                 {/* セット結果表示 */}
-                {set.myScore > 0 || set.opponentScore > 0 ? (
+                {myScore > 0 || opponentScore > 0 ? (
                   <div className="mt-3 text-center">
                     <span className={`text-sm font-semibold px-3 py-1 rounded-lg ${
-                      set.myScore > set.opponentScore 
+                      myScore > opponentScore 
                         ? 'text-green-600 bg-green-50' 
-                        : set.myScore < set.opponentScore 
+                        : myScore < opponentScore 
                         ? 'text-red-600 bg-red-50' 
                         : 'text-gray-600 bg-gray-50'
                     }`}>
-                      {set.myScore > set.opponentScore ? '勝利' : set.myScore < set.opponentScore ? '敗戦' : '引き分け'}
+                      {myScore > opponentScore ? '勝利' : myScore < opponentScore ? '敗戦' : '引き分け'}
                     </span>
                   </div>
                 ) : (
@@ -312,7 +339,7 @@ export default function ScoreInput({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-blue-700">試合時間:</span>
-                  <span className="font-semibold text-blue-900">{matchDuration}分</span>
+                  <span className="font-semibold text-blue-900">{getNumericValue(matchDuration)}分</span>
                 </div>
               </div>
             </div>

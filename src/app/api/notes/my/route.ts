@@ -17,6 +17,27 @@ export async function GET(request: NextRequest) {
   });
 
   try {
+    // JWT_SECRETの確認
+    if (!process.env.JWT_SECRET) {
+      logger.logError({
+        error: new Error('JWT_SECRET is not configured'),
+        context: {
+          requestId,
+          endpoint: '/api/notes/my',
+          method: 'GET'
+        },
+        additionalInfo: {
+          hasJwtSecret: false,
+          environment: process.env.NODE_ENV
+        }
+      });
+      return NextResponse.json({ 
+        success: false,
+        error: 'サーバー設定エラー: JWT_SECRETが設定されていません',
+        details: 'Please configure JWT_SECRET environment variable'
+      }, { status: 500 });
+    }
+
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
     if (!token) {
@@ -28,7 +49,10 @@ export async function GET(request: NextRequest) {
           method: 'GET'
         }
       });
-      return NextResponse.json({ error: '認証トークンが必要です' }, { status: 401 });
+      return NextResponse.json({ 
+        success: false,
+        error: '認証トークンが必要です' 
+      }, { status: 401 });
     }
 
     const user = await verifyToken(token);
@@ -45,7 +69,10 @@ export async function GET(request: NextRequest) {
           tokenLength: token.length
         }
       });
-      return NextResponse.json({ error: '無効なトークンです' }, { status: 401 });
+      return NextResponse.json({ 
+        success: false,
+        error: '無効なトークンです' 
+      }, { status: 401 });
     }
 
     // ページネーションパラメータを取得
@@ -76,12 +103,7 @@ export async function GET(request: NextRequest) {
         user: true,
         noteType: true,
         result: true,
-        scoreSets: true,
-        noteOpponents: {
-          include: {
-            opponent: true
-          }
-        }
+        scoreSets: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -90,6 +112,47 @@ export async function GET(request: NextRequest) {
       skip: offset
     });
 
+    // noteOpponentsを別途取得（安全な方法）
+    const notesWithOpponents = await Promise.all(
+      notes.map(async (note) => {
+        try {
+          const noteOpponents = await prisma.noteOpponent.findMany({
+            where: {
+              noteId: note.id,
+              opponentId: { not: null } // nullでないopponent_idのみ取得
+            },
+            include: {
+              opponent: {
+                select: {
+                  id: true,
+                  name: true,
+                  userId: true
+                }
+              }
+            }
+          });
+
+          // さらにnullチェック（二重保険）
+          const validNoteOpponents = noteOpponents.filter(no => 
+            no.opponent !== null && 
+            no.opponentId !== null && 
+            no.opponentId.trim() !== ''
+          );
+
+          return {
+            ...note,
+            noteOpponents: validNoteOpponents
+          };
+        } catch (error) {
+          console.error(`Error fetching opponents for note ${note.id}:`, error);
+          return {
+            ...note,
+            noteOpponents: []
+          };
+        }
+      })
+    );
+
     const duration = Date.now() - startTime;
     
     // 成功ログ
@@ -97,15 +160,15 @@ export async function GET(request: NextRequest) {
       requestId,
       endpoint: '/api/notes/my',
       userId: user.userId,
-      notesCount: notes.length,
+      notesCount: notesWithOpponents.length,
       totalCount,
       page,
       limit
     });
 
     // データ構造を確認するログ
-    if (notes.length > 0) {
-      const firstNote = notes[0];
+    if (notesWithOpponents.length > 0) {
+      const firstNote = notesWithOpponents[0];
       logger.logApiRequest('GET', '/api/notes/my', {
         requestId,
         endpoint: '/api/notes/my',
@@ -115,14 +178,15 @@ export async function GET(request: NextRequest) {
           hasScoreSets: !!firstNote.scoreSets,
           noteTypeName: firstNote.noteType?.name,
           resultName: firstNote.result?.name,
-          scoreSetsCount: firstNote.scoreSets?.length
+          scoreSetsCount: firstNote.scoreSets?.length,
+          noteOpponentsCount: firstNote.noteOpponents?.length || 0
         }
       });
     }
 
     return NextResponse.json({ 
       success: true,
-      data: notes,
+      data: notesWithOpponents,
       pagination: {
         page,
         limit,
@@ -151,7 +215,9 @@ export async function GET(request: NextRequest) {
           error.message.includes('connection') || 
           error.message.includes('timeout') ||
           error.message.includes('ECONNREFUSED')
-        )
+        ),
+        hasJwtSecret: !!process.env.JWT_SECRET,
+        jwtSecretLength: process.env.JWT_SECRET?.length || 0
       }
     });
     

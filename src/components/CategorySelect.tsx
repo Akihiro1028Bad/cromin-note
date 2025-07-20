@@ -67,7 +67,7 @@ export default function CategorySelect({ value, onChange, required = false, disa
 
   return (
     <div className="w-full">
-      <label className="block text-lg font-semibold text-gray-900 mb-4">
+      <label className="block text-base font-semibold text-gray-900 mb-3">
         カテゴリ {required && <span className="text-red-500">*</span>}
       </label>
       <div className="grid grid-cols-2 gap-3">
@@ -87,11 +87,6 @@ export default function CategorySelect({ value, onChange, required = false, disa
           </button>
         ))}
       </div>
-      {!value && required && (
-        <p className="mt-3 text-base text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-          カテゴリを選択してください
-        </p>
-      )}
     </div>
   )
 } 

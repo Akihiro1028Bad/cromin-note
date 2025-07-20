@@ -14,19 +14,20 @@
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
-    "deploy:migrate": "node scripts/deploy-migrate.js",
-    "migrate:only": "node scripts/migrate-only.js",
-    "vercel-build": "rm -rf .next && node scripts/vercel-deploy.js",
+    "deploy:migrate": "node scripts/deploy-migrate.mjs",
+    "migrate:only": "node scripts/migrate-only.mjs",
+    "vercel-build": "rm -rf .next && node scripts/vercel-deploy.mjs",
     "postinstall": "npx prisma generate",
-    "reset": "node scripts/local-reset.js",
-    "reset:full": "node scripts/local-reset.js && npm run dev",
+    "reset": "node scripts/local-reset.mjs",
+    "reset:full": "node scripts/local-reset.mjs && npm run dev",
     "quick-reset": "./scripts/quick-reset.sh",
-    "reset:auto": "node scripts/reset-with-setup.js"
+    "reset:auto": "node scripts/reset-with-setup.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+
     "@prisma/client": "^5.15.0",
     "@supabase/supabase-js": "^2.50.3",
     "@types/bcryptjs": "^2.4.6",
@@ -41,6 +42,7 @@
     "jsonwebtoken": "^9.0.2",
     "next": "15.3.5",
     "nodemailer": "^7.0.4",
+
     "pg": "^8.16.3",
     "prisma": "^5.15.0",
     "react": "^19.0.0",

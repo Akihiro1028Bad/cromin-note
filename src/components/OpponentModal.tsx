@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface OpponentModalProps {
   isOpen: boolean
@@ -13,12 +13,23 @@ export default function OpponentModal({ isOpen, onClose, onOpponentCreated }: Op
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // モーダルが開かれた時に状態をリセット
+  useEffect(() => {
+    if (isOpen) {
+      setName('')
+      setError(null)
+      setSubmitting(false)
+    }
+  }, [isOpen])
+
   const handleSubmit = async () => {
+    // バリデーションエラーの場合は即座に処理
     if (!name.trim()) {
       setError('対戦相手名を入力してください')
       return
     }
 
+    // 送信中状態を設定
     setSubmitting(true)
     setError(null)
 
@@ -42,6 +53,7 @@ export default function OpponentModal({ isOpen, onClose, onOpponentCreated }: Op
       // 成功時の処理
       onOpponentCreated(data.opponent)
       setName('')
+      setError(null)
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました')
@@ -51,21 +63,48 @@ export default function OpponentModal({ isOpen, onClose, onOpponentCreated }: Op
   }
 
   const handleClose = () => {
+    // 状態を即座にリセット
     setName('')
     setError(null)
+    setSubmitting(false)
     onClose()
   }
+
+  // オーバーレイクリックでの閉じる処理
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleClose()
+    }
+  }
+
+  // ESCキーでの閉じる処理
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose()
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-900">対戦相手を登録</h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={submitting}
+            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -81,7 +120,13 @@ export default function OpponentModal({ isOpen, onClose, onOpponentCreated }: Op
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value)
+                // 入力時にエラーをクリア
+                if (error) {
+                  setError(null)
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !submitting && name.trim()) {
                   e.preventDefault()
@@ -89,7 +134,8 @@ export default function OpponentModal({ isOpen, onClose, onOpponentCreated }: Op
                 }
               }}
               placeholder="対戦相手の名前を入力"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              disabled={submitting}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               required
             />
           </div>
@@ -104,7 +150,8 @@ export default function OpponentModal({ isOpen, onClose, onOpponentCreated }: Op
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              disabled={submitting}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               キャンセル
             </button>
