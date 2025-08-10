@@ -126,13 +126,48 @@ try {
   // 9. マスタデータのセットアップ（初回デプロイ時）
   console.log('🗄️ マスタデータをセットアップ中...');
   try {
-    execSync('curl -X POST https://your-app.vercel.app/api/setup-master-data', { 
-      stdio: 'inherit',
-      timeout: 30000 
+    const seedEnv = {
+      ...process.env,
+      DATABASE_URL: process.env.DIRECT_URL,
+      NODE_ENV: 'production'
+    };
+    
+    console.log('📋 シード環境変数:');
+    console.log('DATABASE_URL (seed):', seedEnv.DATABASE_URL?.replace(/:[^:@]*@/, ':****@'));
+    console.log('NODE_ENV (seed):', seedEnv.NODE_ENV);
+    
+    // 既存データの確認
+    const { PrismaClient } = await import('@prisma/client');
+    const checkPrisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: process.env.DIRECT_URL
+        }
+      }
     });
-    console.log('✅ マスタデータのセットアップが完了しました');
+    
+    const existingNoteTypes = await checkPrisma.noteType.count();
+    const existingResults = await checkPrisma.result.count();
+    const existingCategories = await checkPrisma.category.count();
+    await checkPrisma.$disconnect();
+    
+    const totalExisting = existingNoteTypes + existingResults + existingCategories;
+    const totalExpected = 3 + 5 + 3; // NoteType(3) + Result(5) + Category(3)
+    
+    if (totalExisting >= totalExpected) {
+      console.log('✅ マスタデータが既に存在します。スキップします。');
+      console.log(`📊 既存データ: NoteType(${existingNoteTypes}), Result(${existingResults}), Category(${existingCategories})`);
+    } else {
+      console.log('🌱 マスタデータを挿入します...');
+      execSync('npx tsx prisma/seed.ts', { 
+        stdio: 'inherit',
+        env: seedEnv
+      });
+      console.log('✅ マスタデータのセットアップが完了しました');
+    }
   } catch (error) {
     console.log('⚠️ マスタデータのセットアップに失敗しました（初回デプロイ時は正常です）');
+    console.log('エラー詳細:', error.message);
   }
   
   console.log('🎉 Vercelデプロイスクリプトが完了しました！');
